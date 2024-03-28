@@ -1,2 +1,9 @@
 CHGCAR
 *.h5
+
+*.c
+*.html
+*.so
+build
+
+__pycache__
