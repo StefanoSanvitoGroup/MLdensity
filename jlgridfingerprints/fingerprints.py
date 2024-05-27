@@ -13,6 +13,7 @@ from .lib.jlcontraction import calculate_2b, calculate_3b, calculate_3b_upper
 
 
 class JLGridFingerprints:
+
     def __init__(
         self,
         rcut=None,
@@ -28,6 +29,7 @@ class JLGridFingerprints:
         periodic=True,
         shifted=True,
         double_shifted=False,
+        double_shifted_1b=False,
         nn_leaf_size=2,
     ):
 
@@ -117,6 +119,7 @@ class JLGridFingerprints:
         self._rmin = rmin
         self._shifted = shifted
         self._double_shifted = double_shifted
+        self._double_shifted_1b = double_shifted_1b
 
         self._nn_leaf_size = nn_leaf_size
 
@@ -169,8 +172,9 @@ class JLGridFingerprints:
 
         n_features = 0
         if self._do_2b_jl:
-            n_features += self._n_species * (self._nmax_1b)
-            self._n_2b_features = self._n_species * (self._nmax_1b)
+            ns = 1 if self._double_shifted_1b else 0
+            n_features += self._n_species * (self._nmax_1b - ns)
+            self._n_2b_features = self._n_species * (self._nmax_1b - ns)
         if self._do_3b_jl:
 
             if self._double_shifted:
@@ -288,8 +292,10 @@ class JLGridFingerprints:
         for ispec in range(self._n_species):
 
             if self.nn_elem_num[ispec][grid_point_index] == 0:
-
-                coeff_2b_matrix.append(np.zeros(self._nmax_1b))
+                if self._double_shifted_1b:
+                    coeff_2b_matrix.append(np.zeros(self._nmax_1b - 1))
+                else:
+                    coeff_2b_matrix.append(np.zeros(self._nmax_1b))
 
             else:
 
@@ -313,7 +319,7 @@ class JLGridFingerprints:
                     self._rmin,
                     self._gamma,
                     shifted=int(self._shifted),
-                    double_shifted=0,
+                    double_shifted=int(self._double_shifted_1b),
                 )
 
                 coeff_2b_matrix.append(calculate_2b(jacobi_ni).copy())
