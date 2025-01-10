@@ -3,7 +3,8 @@ import time
 from pymatgen.io.vasp.outputs import Chgcar
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.ase import AseAtomsAdaptor
-
+import multiprocessing as mp
+from itertools import batched, chain
 from jlgridfingerprints.fingerprints import JLGridFingerprints
 
 import json
@@ -46,7 +47,10 @@ class JLPredictor():
         else:
             self._prec_factor = 1.0
 
-    def predict_chgcar(self,atoms,nelect,batch_size=None,verbose=False,save_path=None,name=None,return_chg=False,write_chgcar=True,use_scaler=False):
+    def predict_chgcar(self,atoms,nelect,batch_size=None,num_proc=1,,verbose=False,save_path=None,name=None,return_chg=False,write_chgcar=True,use_scaler=False):
+
+        if not batch_size:
+            assert num_proc == 1
 
         time_descriptor = 0.0
         time_write = 0.0
@@ -68,21 +72,32 @@ class JLPredictor():
         del frac_points
 
         t_init = time.time()
-        if batch_size is None:
+        if (num_proc == 1) and (batch_size is None):
             X_batch = self.jl.create(atoms, cart_positions)
             if use_scaler:
                 X_batch = self.scaler.transform(X_batch)
             ml_chg_points = self.model.predict(X_batch)
         else:
-            nchunks = int(np.ceil(len(cart_positions) / batch_size))
-            for ib in range(nchunks):
-                X_batch = self.jl.create(atoms, cart_positions[ib*batch_size:(ib+1)*batch_size])
+            if num_proc > 1:
+                pool = mp.Pool(processes=num_proc)
+
+            map_fn = map if num_proc == 1 else pool.map
+
+            def calc_fn(pos):
+                jl = JLGridFingerprints(**self.jl_settings)
+                X = jl.create(atoms, pos)
                 if use_scaler:
-                    X_batch = self.scaler.transform(X_batch)
-                if ib == 0:
-                    ml_chg_points = self.model.predict(X_batch)
-                else: ml_chg_points = np.append(ml_chg_points,self.model.predict(X_batch),axis=0)
-            del X_batch
+                    X_ = self.scaler.transform(X)
+                return self.model.predict(X)
+
+            results = map_fn(calc_fn, batched(cart_positions, batch_size))
+            ml_chg_points = np.fromiter(
+                chain.from_iterable(a for a in results), dtype=np.float64
+            )
+
+            if num_proc > 1:
+                pool.close()
+
         time_descriptor += (time.time() - t_init)
 
         ml_chg_points = ml_chg_points.reshape((ngxf,ngyf,ngzf),order='C') * vol
