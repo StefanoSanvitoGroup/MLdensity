@@ -47,8 +47,6 @@ podman run --rm -v .:/MLdensity -it mldensity bash
 cd MLdensity/ && uv pip install -e .
 ```
 
-> **Note (macOS / rootless Podman):** If `ls` inside the container returns `Permission denied` on the mounted directory, the `:z` volume label above should fix it. If not, try `--userns=keep-id` instead of `:z`.
-
 ## Usage
 
 Play with the examples in the `aluminium/`, `benzene/`, `molybdenium/`, and `2d_mos2/` directories.
