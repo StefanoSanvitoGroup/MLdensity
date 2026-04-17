@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools", "cython", "numpy"]
+build-backend = "setuptools.build_meta:__legacy__"
+
+[project]
+name = "jlgridfingerprints"
+version = "0.1.0"
+dependencies = [
+    "numpy",
+    "scipy",
+    "sympy",
+    "pandas",
+    "h5py",
+    "ase",
+    "pymatgen",
+    "spglib",
+    "scikit-learn",
+    "matplotlib",
+    "plotly",
+    "tqdm",
+]

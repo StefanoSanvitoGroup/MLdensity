@@ -1,0 +1,15 @@
+FROM ubuntu:26.04
+# Install C compiler and downloaders
+RUN apt-get update && apt install -y gcc build-essential curl bzip2
+# Install & set up conda package manager (micromamba) matching system architecture
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj -C /usr/local bin/micromamba; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        curl -Ls https://micro.mamba.pm/api/micromamba/linux-aarch64/latest | tar -xvj -C /usr/local bin/micromamba; \
+    fi
+RUN /usr/local/bin/micromamba shell init -s bash -r ~/micromamba
+# Create & activate Python environment (conda env)
+COPY environment.yml /tmp/environment.yml
+RUN micromamba env create -f /tmp/environment.yml && micromamba clean --all --yes
+RUN echo 'micromamba activate jlcdm' >> ~/.bashrc

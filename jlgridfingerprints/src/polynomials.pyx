@@ -8,7 +8,7 @@ from cython.parallel import prange
 cimport numpy as np
 cimport cython
 
-from lib.utils import vector_dot
+from jlgridfingerprints.lib.utils import vector_dot
 from libc.math cimport pi,cos
 
 def expand_jacobi(double[::1] rgi, int nmax, int alpha, int beta, double rcut, double rmin=0, double gamma=1, bint shifted=1, bint double_shifted=0):
