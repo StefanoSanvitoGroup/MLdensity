@@ -1,6 +1,13 @@
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 import numpy as np
+import os
+
+# Ensure the output directory for compiled extensions exists.
+# Without this, the build fails after a fresh git clone because the standard
+# Python .gitignore template contains a bare `lib/` pattern that prevents
+# jlgridfingerprints/lib/ from being tracked in git.
+os.makedirs('jlgridfingerprints/lib', exist_ok=True)
 
 fnames = ['polynomials', 'jlcontraction', 'utils', 'geometry']
 
