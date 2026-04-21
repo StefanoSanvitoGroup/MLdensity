@@ -1,0 +1,12 @@
+numpy
+scipy
+sympy
+pandas
+h5py
+ase
+pymatgen
+spglib
+scikit-learn
+matplotlib
+plotly
+tqdm
