@@ -17,7 +17,7 @@ def plot_corr_scatter(label,y_true,y_pred,savefig=False,model_name='',show=False
     r2_score = metrics.r2_score(y_true,y_pred)
     mae_score = metrics.mean_absolute_error(y_true,y_pred)
     mse_score = metrics.mean_squared_error(y_true,y_pred)
-    rmse_score = metrics.mean_squared_error(y_true,y_pred,squared=False)
+    rmse_score = metrics.root_mean_squared_error(y_true,y_pred)
     maxae_score = metrics.max_error(y_true,y_pred)
     
     min_ax = min(y_true.min(),y_pred.min())*0.9
@@ -103,8 +103,8 @@ test_mae = metrics.mean_absolute_error(y_test,y_test_pred)
 train_mse = metrics.mean_squared_error(y_train,y_train_pred)
 test_mse = metrics.mean_squared_error(y_test,y_test_pred)
 
-train_rmse = metrics.mean_squared_error(y_train,y_train_pred,squared=False)
-test_rmse = metrics.mean_squared_error(y_test,y_test_pred,squared=False)
+train_rmse = metrics.root_mean_squared_error(y_train,y_train_pred)
+test_rmse = metrics.root_mean_squared_error(y_test,y_test_pred)
 
 train_maxae = metrics.max_error(y_train,y_train_pred)
 test_maxae = metrics.max_error(y_test,y_test_pred)
