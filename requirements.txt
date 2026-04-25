@@ -10,3 +10,4 @@ scikit-learn
 matplotlib
 plotly
 tqdm
+pyyaml
