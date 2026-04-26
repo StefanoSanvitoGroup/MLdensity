@@ -35,18 +35,50 @@ jlgridfingerprints/
 The `.pyx` files are compiled by Cython into shared libraries in `jlgridfingerprints/lib/`. The build is driven by 
 the root-level `setup.py` / `pyproject.toml`.
 
-## Containerized development
-
-A `Dockerfile` using uv Python environment is provided at the repo root for container managers (Podman, Docker). 
-Alternatives for other Python env managers (conda, plain venv) are under `containers/`.
-
-```bash
-podman build -t mldensity .
-podman run --rm -v .:/MLdensity -it mldensity bash
-# inside container:
-cd MLdensity/ && uv pip install -e .
-```
-
 ## Usage
 
 Play with the examples in the `aluminium/`, `benzene/`, `molybdenium/`, and `2d_mos2/` directories.
+
+## Containerized development
+
+The Cython extensions require a Linux build environment. On macOS (Apple Silicon)
+the recommended approach is to build and run the package inside a container using
+[Podman](https://podman.io) or Docker.
+
+### Setup
+
+```bash
+# (MacOS only) Initialize and start the Linux VM
+# (--rootful=true is required in case of IDE integration)
+podman machine init --rootful=true
+podman machine start
+
+# Build the image 'mldensity'
+podman build -t mldensity .
+
+# Run the container 'mldensity-dev' based on the image
+podman run -d --name mldensity-dev ./:/MLdensity \ -it mldensity bash
+
+# Open a shell in the running container
+podman exec -it mldensity-dev bash   
+
+# Install the package
+cd /MLdensity && uv pip install -e .
+
+# Use the package
+python -c "import jlgridfingerprints" # verify
+
+# Exit the shell when done
+exit
+```
+
+### Container management
+
+```bash
+podman ps -a                        # list all containers
+podman stop container-name          # stop container
+podman start container-name         # restart
+podman rm container-name            # remove container
+podman images                       # list images
+podman rmi image-name               # remove image
+```
