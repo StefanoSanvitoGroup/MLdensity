@@ -1,6 +1,6 @@
 # TODO
 
-## Performance: parallelize `create()` over centers, not inside the contraction kernel
+## Performance: parallelize `JLGridFingerprints.create()` over centers, not inside the contraction kernel
 
 - [ ] OpenMP `prange` in `calculate_3b_upper` / `calculate_3b` (`jlcontraction.pyx`) parallelizes the inner descriptor contraction (~147 elements for Al settings). This function is called once per grid point from a **Python loop** in `create()` (`fingerprints.py` lines 195–208), amounting to ~2.8M tiny parallel calls per structure at full-grid prediction scale. Thread overhead dominates; more threads = slower.
 
