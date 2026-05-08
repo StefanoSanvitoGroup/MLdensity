@@ -57,7 +57,7 @@ podman machine start
 podman build -t mldensity .
 
 # Run the container 'mldensity-dev' based on the image
-podman run -d --name mldensity-dev ./:/MLdensity \ -it mldensity bash
+podman run -d --name mldensity-dev -v ./:/MLdensity -it mldensity bash
 
 # Open a shell in the running container
 podman exec -it mldensity-dev bash   
