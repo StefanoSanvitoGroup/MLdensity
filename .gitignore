@@ -4,6 +4,7 @@
 ############################################################
 CHGCAR
 *.h5
+local/
 # Cython build artifacts (generated from .pyx; cython is a declared build dependency)
 jlgridfingerprints/src/*.c
 jlgridfingerprints/src/*.html
