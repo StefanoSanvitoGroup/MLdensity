@@ -23,7 +23,6 @@ for fname in fnames:
     )]
 
 setup(
-    name='jlgridfingerprints',
     packages=['jlgridfingerprints', 'jlgridfingerprints.lib'],
     ext_modules=cythonize(extensions, annotate=True)
 )

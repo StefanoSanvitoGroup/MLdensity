@@ -7,6 +7,8 @@ RUN ARCH=$(uname -m) && \
         curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj -C /usr/local bin/micromamba; \
     elif [ "$ARCH" = "aarch64" ]; then \
         curl -Ls https://micro.mamba.pm/api/micromamba/linux-aarch64/latest | tar -xvj -C /usr/local bin/micromamba; \
+    else \
+        echo "Unsupported architecture: $ARCH (expected x86_64 or aarch64)" >&2; exit 1; \
     fi
 RUN /usr/local/bin/micromamba shell init -s bash -r ~/micromamba
 # Create & activate Python environment (conda env)
