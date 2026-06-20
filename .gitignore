@@ -5,6 +5,9 @@
 CHGCAR
 *.h5
 local/
+# Local AI coding-session transcripts (specstory) and scratch scripts
+.specstory/
+scripts/test01/
 # Cython build artifacts (generated from .pyx; cython is a declared build dependency)
 jlgridfingerprints/src/*.c
 jlgridfingerprints/src/*.html
