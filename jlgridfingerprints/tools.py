@@ -16,7 +16,7 @@ def create_grid_coords(grid_size=(160,160,160),return_cartesian_coords=False,a_v
 
 def sample_charge(chg,sigma,n_samples,uniform_ratio,seed=42):
 
-    rng = default_rng(42)
+    rng = default_rng(seed)
 
     chg = chg.ravel()
 

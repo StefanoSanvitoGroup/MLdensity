@@ -1,0 +1,10 @@
+FROM ubuntu:26.04
+# Install C compiler and system Python (python3-dev needed for Cython compilation)
+RUN apt-get update && apt-get install -y gcc build-essential python3 python3-dev python3-venv python3-pip
+# Create Python virtual environment
+RUN python3 -m venv /opt/jlcdm
+# Activate for subsequent RUN/CMD steps
+ENV VIRTUAL_ENV=/opt/jlcdm
+ENV PATH="/opt/jlcdm/bin:$PATH"
+# Activate for interactive shells
+RUN echo 'source /opt/jlcdm/bin/activate' >> ~/.bashrc

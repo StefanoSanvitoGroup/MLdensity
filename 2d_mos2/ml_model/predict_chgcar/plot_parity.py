@@ -23,7 +23,7 @@ def plot_corr_scatter_phases(label,
 
     r2_score = metrics.r2_score(y_true_1tp, y_pred_1tp)
     mae_score = metrics.mean_absolute_error(y_true_1tp, y_pred_1tp)
-    rmse_score = metrics.mean_squared_error(y_true_1tp, y_pred_1tp, squared=False)
+    rmse_score = metrics.root_mean_squared_error(y_true_1tp, y_pred_1tp)
     
     max_ax = max(y_true_1h.max(),y_true_1t.max(),y_true_1tp.max(),y_pred_1h.max(),y_pred_1t.max(),y_pred_1tp.max()) * 1.2
     min_ax = min(min(y_true_1h.min(),y_true_1t.min(),y_true_1tp.min(),y_pred_1h.min(),y_pred_1t.min(),y_pred_1tp.min()) * 0.6,-0.1 * max_ax)
