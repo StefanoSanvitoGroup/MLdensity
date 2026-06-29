@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push *)",
+      "Bash(gh pr *)",
+      "Bash(gh api *)",
+      "Bash(git check-ignore *)",
+      "Bash(python3 -c \"import tomllib; d=tomllib.load\\(open\\('pyproject.toml','rb'\\)\\); print\\('pyproject OK:', d['build-system']['build-backend'], '| sklearn pin:', [x for x in d['project']['dependencies'] if 'scikit' in x]\\)\")",
+      "Bash(python3 -m py_compile setup.py jlgridfingerprints/lib/__init__.py)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'packaging: address Copilot PR review \\(sklearn floor, build backend, lib package, dockerfile arch guard\\) *)",
+      "Bash(git ls-remote *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(git branch *)"
+    ]
+  }
+}
