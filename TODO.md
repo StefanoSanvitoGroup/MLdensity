@@ -1,5 +1,31 @@
 # TODO
 
+## Package standards (do first)
+
+- [ ] Docstrings + function-signature type hints across `jlgridfingerprints/` (currently largely absent).
+- [ ] LICENSE (pending choice from Sanvito group; improvements below can land before it).
+- [ ] Tests.
+- [ ] CITATION.cff.
+
+## Integrate the `fast-predictor` module (after package-standards work above)
+
+Faster `JLPredictor` variant from the Sanvito group (Luke; orig. Urvesh). Received as
+`jlgridfingerprints/fast-predictor.py` (removed for now). What it adds over `predictor.py`:
+
+- `num_proc` arg → parallelizes per-batch fingerprint creation + prediction over a
+  `multiprocessing.Pool`; streams results via `more_itertools.batched` + `np.fromiter`
+  instead of the sequential `np.append` chunk loop.
+- Normalization made opt-in (`normalize=False`); original always normalized.
+- New `predict_key_chgcar(...)` for an explicit point set + grid size.
+
+Fix on integration (bugs in the received file):
+
+- [ ] Restore `from ase.units import Bohr, Rydberg` (dropped → `get_chgcar_grid` NameErrors).
+- [ ] `use_scaler` scales into an unused `X_`; predict on the scaled array.
+- [ ] Remove duplicate `normalize_nelect` definition.
+- [ ] `calc_fn` closure isn't picklable under the spawn start method (macOS/Windows); make it a module/method-level callable.
+- [ ] Rename to importable `fast_predictor.py` (hyphen breaks `import`).
+
 ## Performance: parallelize `JLGridFingerprints.create()` over centers, not inside the contraction kernel
 
 - [ ] OpenMP `prange` in `calculate_3b_upper` / `calculate_3b` (`jlcontraction.pyx`) parallelizes the inner descriptor contraction (~147 elements for Al settings). This function is called once per grid point from a **Python loop** in `create()` (`fingerprints.py` lines 195–208), amounting to ~2.8M tiny parallel calls per structure at full-grid prediction scale. Thread overhead dominates; more threads = slower.
