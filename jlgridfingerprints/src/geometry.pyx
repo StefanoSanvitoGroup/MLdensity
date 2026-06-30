@@ -108,6 +108,35 @@ cdef void get_extended_system(int nx, int ny, int nz, double [:,::1]positions, d
                     l = l + 1
 
 def get_nn_in_sphere(double[:,::1] centers, double [:,::1]positions, double [:,::1]cell, long [::1]pbc, double radial_cutoff, int leaf_size=2):
+    """Find neighbours within a cutoff radius of each center (KD-tree + PBC).
+
+    The system is replicated as needed along the periodic directions, then a
+    KD-tree query collects all atoms within ``radial_cutoff`` of every center.
+    Results are returned as flat arrays sliced per center by start/end strides.
+
+    Parameters
+    ----------
+    centers : numpy.ndarray
+        Query points, shape ``(n_centers, 3)``.
+    positions : numpy.ndarray
+        Atom positions, shape ``(n_atoms, 3)``.
+    cell : numpy.ndarray
+        Lattice vectors as rows, shape ``(3, 3)``.
+    pbc : numpy.ndarray
+        Periodic-boundary flags (0/1) of length 3.
+    radial_cutoff : float
+        Neighbour cutoff radius.
+    leaf_size : int, optional
+        KD-tree leaf size. Default 2.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        ``(nn_index, nn_dist, nn_vec, start, end, num)``: flat neighbour
+        indices, distances, neighbour vectors (neighbour minus center), the
+        per-center slice bounds (``start``/``end``) into the flat arrays, and
+        the neighbour count per center.
+    """
 
     cdef int nx = 0, ny = 0, nz = 0
     cdef int natoms = positions.shape[0]

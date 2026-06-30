@@ -1,6 +1,11 @@
+"""Predict charge densities on an FFT grid from JL fingerprints and a model."""
+
+from __future__ import annotations
+
 import json
 import pickle
 import time
+from typing import TYPE_CHECKING
 
 import numpy as np
 from ase.units import Bohr, Rydberg
@@ -10,17 +15,49 @@ from pymatgen.io.vasp.outputs import Chgcar
 
 from jlgridfingerprints.fingerprints import JLGridFingerprints
 
+if TYPE_CHECKING:
+    from ase import Atoms
+
 
 class JLPredictor:
+    """Predict the charge density of a structure from a trained model.
+
+    Wraps a :class:`JLGridFingerprints` descriptor and a pickled regressor:
+    fingerprints are evaluated on a regular FFT grid, fed to the model, and the
+    predicted density is renormalised to the target electron count and
+    optionally written as a VASP CHGCAR.
+    """
+
     def __init__(
         self,
-        jl_settings,
-        model_path,
-        grid_size=None,
-        encut=None,
-        prec="Accurate",
-        scaler_path=None,
-    ):
+        jl_settings: str | dict,
+        model_path: str,
+        grid_size: tuple[int, int, int] | None = None,
+        encut: float | None = None,
+        prec: str = "Accurate",
+        scaler_path: str | None = None,
+    ) -> None:
+        """Load the JL settings, trained model, and optional feature scaler.
+
+        Parameters
+        ----------
+        jl_settings : str or dict
+            :class:`JLGridFingerprints` keyword arguments, either as a dict or
+            as a path to a ``.json`` file containing them.
+        model_path : str
+            Path to a pickled fitted regressor exposing ``predict``.
+        grid_size : tuple of int, optional
+            Explicit FFT grid ``(nx, ny, nz)``. If omitted, the grid is derived
+            from ``encut`` per structure via :meth:`get_chgcar_grid`.
+        encut : float, optional
+            Plane-wave cutoff energy (eV) used to derive the grid when
+            ``grid_size`` is not given.
+        prec : str
+            VASP-like precision (e.g. ``"Accurate"``/``"Normal"``); sets the
+            grid precision factor.
+        scaler_path : str, optional
+            Path to a pickled feature scaler exposing ``transform``.
+        """
 
         if isinstance(jl_settings, str) and jl_settings.endswith(".json"):
             self.jl_settings = json.load(open(jl_settings))
@@ -56,16 +93,47 @@ class JLPredictor:
 
     def predict_chgcar(
         self,
-        atoms,
-        nelect,
-        batch_size=None,
-        verbose=False,
-        save_path=None,
-        name=None,
-        return_chg=False,
-        write_chgcar=True,
-        use_scaler=False,
-    ):
+        atoms: Atoms,
+        nelect: float,
+        batch_size: int | None = None,
+        verbose: bool = False,
+        save_path: str | None = None,
+        name: str | None = None,
+        return_chg: bool = False,
+        write_chgcar: bool = True,
+        use_scaler: bool = False,
+    ) -> np.ndarray | None:
+        """Predict the charge density of a structure on the FFT grid.
+
+        Parameters
+        ----------
+        atoms : ase.Atoms
+            Structure to predict the density for.
+        nelect : float
+            Target number of electrons; the predicted density is renormalised
+            to this value when it deviates by more than ``1e-6``.
+        batch_size : int, optional
+            If set, evaluate fingerprints and predict in chunks of this many
+            grid points instead of all at once (lower peak memory).
+        verbose : bool
+            Print grid size and timing information.
+        save_path : str, optional
+            Directory to write the CHGCAR into (default: current directory).
+        name : str, optional
+            Output filename (default ``"CHGCAR"``).
+        return_chg : bool
+            If ``True``, return the predicted density array.
+        write_chgcar : bool
+            If ``True``, write the density to a VASP CHGCAR file.
+        use_scaler : bool
+            Apply the loaded feature scaler before prediction.
+
+        Returns
+        -------
+        numpy.ndarray or None
+            The ``(nx, ny, nz)`` density grid if ``return_chg`` is ``True``,
+            otherwise ``None``.
+        """
 
         time_descriptor = 0.0
         time_write = 0.0
@@ -156,7 +224,35 @@ class JLPredictor:
         if return_chg:
             return ml_chg_points
 
-    def get_chgcar_grid(self, alats, encut, prec_factor, wfact=4):
+    def get_chgcar_grid(
+        self,
+        alats: np.ndarray,
+        encut: float,
+        prec_factor: float,
+        wfact: int = 4,
+    ) -> tuple[int, int, int]:
+        """Derive a VASP-compatible FFT grid from the plane-wave cutoff.
+
+        Each grid dimension is rounded up to an FFT-friendly size (factorisable
+        into 2, 3, 5, 7 with at least one factor of 2) and scaled by the
+        precision factor.
+
+        Parameters
+        ----------
+        alats : numpy.ndarray
+            Cell edge lengths ``(a, b, c)``.
+        encut : float
+            Plane-wave cutoff energy (eV).
+        prec_factor : float
+            Grid multiplier set by the precision option.
+        wfact : int
+            Wavevector factor controlling the base grid density.
+
+        Returns
+        -------
+        tuple of int
+            FFT grid sizes ``(ngxf, ngyf, ngzf)``.
+        """
 
         def fftchk(grid):
 
@@ -188,7 +284,31 @@ class JLPredictor:
 
         return int(ngxf), int(ngyf), int(ngzf)
 
-    def normalize_nelect(self, chg, nelect, volume):
+    def normalize_nelect(
+        self,
+        chg: np.ndarray,
+        nelect: float,
+        volume: float,
+    ) -> np.ndarray:
+        """Rescale a density grid to integrate to ``nelect`` electrons.
+
+        Sets the ``G = 0`` Fourier component so the mean density matches the
+        target electron count, then transforms back to real space.
+
+        Parameters
+        ----------
+        chg : numpy.ndarray
+            Charge-density grid.
+        nelect : float
+            Target number of electrons.
+        volume : float
+            Cell volume.
+
+        Returns
+        -------
+        numpy.ndarray
+            The renormalised density grid (same shape as ``chg``).
+        """
 
         from scipy import fft
 

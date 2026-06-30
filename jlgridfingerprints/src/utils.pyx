@@ -11,6 +11,20 @@ cimport cython
 from libc.math cimport sqrt,pi
 
 def get_versors(double [:,::1]vector,double [::1]distance):
+    """Normalise neighbour vectors to unit length (versors).
+
+    Parameters
+    ----------
+    vector : numpy.ndarray
+        Neighbour vectors of shape ``(n_neighbours, 3)``.
+    distance : numpy.ndarray
+        Corresponding distances of length ``n_neighbours``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Unit vectors of shape ``(n_neighbours, 3)``.
+    """
 
     cdef int num_n = distance.shape[0]
     cdef int dim = 3

@@ -7,7 +7,8 @@ FAIR minimum for a single-maintainer project — no docs site, mypy, coverage ga
 
 - [x] Ruff config (`[tool.ruff]`) + pre-commit (ruff hook); apply one repo-wide format pass.
 - [x] Complete pyproject metadata: `description`, `readme`, `authors`, `requires-python`, `urls`, `keywords`, `classifiers`; lower bounds on numpy/ase/pymatgen.
-- [ ] Numpy-style docstrings + signature type hints on the public API (`JLGridFingerprints`, `JLPredictor`, `tools.py`, public Cython functions).
+- [x] Numpy-style docstrings + signature type hints on the public API (`JLGridFingerprints`, `JLPredictor`, `tools.py`, public Cython functions).
+  - [ ] Follow-up (found while adding docstrings): `expand_jacobi` in `src/polynomials.pyx` declares `int alpha, int beta`, but the example pipelines pass floats (e.g. `7.875`) and the internal `calculate_jacobi` uses `double` — likely α/β truncation bug. Numerical behavior → verify with the Sanvito group before any fix.
 - [ ] Smoke tests (pytest): import; fingerprint shape on a tiny structure; predictor round-trip. (May grow to its own branch.)
 - [ ] GitHub Actions: build Cython extensions + run pytest on push/PR.
 - [ ] README quickstart (~10-line usage block).

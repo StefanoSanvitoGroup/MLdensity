@@ -1,4 +1,9 @@
+"""Linear Jacobi-Legendre grid fingerprints of the local atomic environment."""
+
+from __future__ import annotations
+
 import itertools
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -7,25 +12,103 @@ from .lib.jlcontraction import calculate_2b, calculate_3b, calculate_3b_upper
 from .lib.polynomials import expand_jacobi, expand_legendre
 from .lib.utils import get_versors
 
+if TYPE_CHECKING:
+    from ase import Atoms
+
 
 class JLGridFingerprints:
+    """Linear Jacobi-Legendre (JL) fingerprints evaluated on grid points.
+
+    Each center (an arbitrary point in space, typically a charge-density grid
+    point) is described by an expansion of its local atomic environment in
+    Jacobi polynomials (radial part) and Legendre polynomials (angular part),
+    following the Jacobi-Legendre Charge Density Model (JLCDM,
+    DOI:10.1038/s41524-023-01053-0).
+
+    Notes
+    -----
+    Body-order terminology: the JL expansion is formally extendable to any body
+    order; this implementation provides the first two. In the grid-centered
+    JLCDM convention the central grid point is *not* counted as a body, so the
+    term that is two-body in the atom-centered JL potential becomes the
+    one-body (``1B``) term here, and the three-body term becomes the two-body
+    (``2B``) term. The public API uses this grid-centered (1B/2B) convention;
+    some internal names (the :meth:`create_2b_jl` / :meth:`create_3b_jl`
+    methods and the ``_do_2b_jl`` / ``_do_3b_jl`` flags) retain the 
+    atom-centered labels.
+
+    - **1B term**: radial expansion in (vanishing-)Jacobi polynomials over the
+      grid-point-to-atom distances.
+    - **2B term**: radial-angular expansion combining (double-vanishing-)Jacobi
+      polynomials (distances) with Legendre polynomials of the angle between
+      pairs of neighbours.
+    """
+
     def __init__(
         self,
-        rcut=None,
-        nmax=None,
-        lmax=None,
-        alpha=None,
-        beta=None,
-        species=None,
-        body="1+2",
-        rmin=0.0,
-        gamma=1.0,
-        vector=True,
-        periodic=True,
-        shifted=True,
-        double_shifted=False,
-        nn_leaf_size=2,
+        rcut: float = None,
+        nmax: list[int] = None,
+        lmax: int = None,
+        alpha: list[float] = None,
+        beta: list[float] = None,
+        species: list[str] = None,
+        body: str = "1+2",
+        rmin: float = 0.0,
+        gamma: float = 1.0,
+        vector: bool = True,
+        periodic: bool = True,
+        shifted: bool = True,
+        double_shifted: bool = False,
+        nn_leaf_size: int = 2,
     ):
+        """Configure the descriptor and precompute the feature layout.
+
+        Parameters
+        ----------
+        rcut : float
+            Neighbour cutoff radius in Angstrom (required, > 0).
+        nmax : list of int
+            Maximum radial (Jacobi) order per body term: a single value shared
+            by both terms, or ``[n_1B, n_2B]``.
+        lmax : int
+            Maximum angular (Legendre) order for the 2B term.
+        alpha, beta : list of float
+            Jacobi polynomial weighting-function parameters (both > -1),
+            parallel to ``nmax`` (one or two entries); ``alpha`` and ``beta``
+            must have matching length.
+        species : list of str
+            Chemical symbols of the species to include.
+        body : str
+            ``"+"``-joined tokens selecting which terms to compute: ``"1"`` for
+            the 1B (radial) term and ``"2"`` for the 2B (radial-angular) term.
+            Default ``"1+2"`` enables both.
+        rmin : float
+            Lower edge of the radial cosine map in Angstrom, applied to the 1B
+            term only (the 2B term always uses ``rmin = 0``). May be negative
+            to push the point of vanishing derivative to inaccessible negative
+            distances, letting the model fit steep density variations close to
+            the atoms. Default ``0.0``.
+        gamma : float
+            Scaling factor applied to the cosine-mapped radial variable in the
+            Jacobi expansion. Default ``1.0``.
+        vector : bool
+            If ``True`` (default), return descriptors as a concatenated 1-D
+            vector; otherwise as a list of per-species / per-pair blocks.
+        periodic : bool
+            Apply periodic boundary conditions in the neighbour search. Default
+            ``True``.
+        shifted : bool
+            Use vanishing-Jacobi radial polynomials (vanishing at ``rcut``).
+            Default ``True``.
+        double_shifted : bool
+            Use double-vanishing-Jacobi radial polynomials (vanishing at both
+            edges of the interval). Applies to the 2B term, where it preserves
+            continuity near the atoms and removes inter-body redundancy.
+            Default ``False``.
+        nn_leaf_size : int
+            Leaf size of the KD-tree used for the neighbour search. Default
+            ``2``.
+        """
 
         self._vector = vector
 
@@ -161,7 +244,17 @@ class JLGridFingerprints:
 
         self._n_features = self.number_of_features()
 
-    def number_of_features(self):
+    def number_of_features(self) -> int:
+        """Return the total descriptor length for the current settings.
+
+        Also caches the per-term feature counts (``_n_2b_features``,
+        ``_n_3b_features_mono``, ``_n_3b_features_duo``) as a side effect.
+
+        Returns
+        -------
+        int
+            Number of features in the descriptor vector.
+        """
 
         n_features = 0
         if self._do_2b_jl:
@@ -198,7 +291,22 @@ class JLGridFingerprints:
 
         return n_features
 
-    def create(self, system, positions=None):
+    def create(self, system: Atoms, positions: np.ndarray = None) -> np.ndarray:
+        """Evaluate the JL fingerprints at each center.
+
+        Parameters
+        ----------
+        system : ase.Atoms
+            Structure providing the atoms and (if periodic) the cell.
+        positions : numpy.ndarray, optional
+            ``(n_centers, 3)`` Cartesian coordinates of the points to describe.
+            Defaults to the atom positions of ``system``.
+
+        Returns
+        -------
+        numpy.ndarray
+            ``(n_centers, n_features)`` array of descriptors.
+        """
 
         system.set_pbc(self._periodic)
 
@@ -228,7 +336,17 @@ class JLGridFingerprints:
 
         return jl_descriptors
 
-    def _initialize_distances(self, system):
+    def _initialize_distances(self, system: Atoms) -> None:
+        """Build per-species neighbour lists within ``rcut`` for all centers.
+
+        Populates the ``nn_elem_*`` attributes consumed by the per-term
+        builders.
+
+        Parameters
+        ----------
+        system : ase.Atoms
+            Structure to search for neighbours of each center.
+        """
 
         nn_elem_list = []
         nn_elem_dist = []
@@ -266,7 +384,23 @@ class JLGridFingerprints:
         self.nn_elem_end = nn_elem_end
         self.nn_elem_num = nn_elem_num
 
-    def create_2b_jl(self, grid_point_index):
+    def create_2b_jl(self, grid_point_index: int) -> np.ndarray | list:
+        """One-body (1B) radial JL coefficients for a single center.
+
+        The method name keeps the older atom-centered ``2b`` label; in the
+        grid-centered JLCDM convention this is the 1B term.
+
+        Parameters
+        ----------
+        grid_point_index : int
+            Index of the center (into ``self.centers``) to describe.
+
+        Returns
+        -------
+        numpy.ndarray or list
+            Concatenated coefficient vector if ``vector`` is ``True``, else a
+            list of per-species blocks.
+        """
 
         coeff_2b_matrix = []
 
@@ -300,7 +434,23 @@ class JLGridFingerprints:
         else:
             return np.concatenate(coeff_2b_matrix, axis=0)
 
-    def create_3b_jl(self, grid_point_index):
+    def create_3b_jl(self, grid_point_index: int) -> np.ndarray | list:
+        """Two-body (2B) radial-angular JL coefficients for a single center.
+
+        The method name keeps the older atom-centered ``3b`` label; in the
+        grid-centered JLCDM convention this is the 2B term.
+
+        Parameters
+        ----------
+        grid_point_index : int
+            Index of the center (into ``self.centers``) to describe.
+
+        Returns
+        -------
+        numpy.ndarray or list
+            Concatenated coefficient vector if ``vector`` is ``True``, else a
+            list of per-species-pair blocks.
+        """
 
         coeff_3b_matrix = []
 
