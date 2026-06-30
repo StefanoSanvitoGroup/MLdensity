@@ -22,6 +22,7 @@ compiled Cython extensions.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import time
 from pathlib import Path
@@ -65,6 +66,9 @@ def main() -> None:
     p.add_argument("--num-proc", type=int, nargs="+", default=(1, 2, 4))
     p.add_argument("--batch-size", type=int, default=100000)
     p.add_argument("--nelect", type=float, default=96.0)
+    p.add_argument(
+        "--json", type=Path, default=None, help="Write the results to this JSON file."
+    )
     args = p.parse_args()
 
     if max(args.num_proc) > 1 and os.environ.get("OMP_NUM_THREADS") != "1":
@@ -98,6 +102,8 @@ def main() -> None:
     print(f"{'predictor':<28}{'wall (s)':>12}{'speedup':>12}")
     print("-" * 52)
     print(f"{'serial JLPredictor':<28}{serial_t:>12.3f}{1.0:>12.2f}")
+
+    runs = [{"num_proc": 0, "wall_s": serial_t, "speedup": 1.0, "label": "serial"}]
     for nproc in args.num_proc:
         t0 = time.time()
         fast.predict_chgcar(
@@ -109,6 +115,27 @@ def main() -> None:
         )
         dt = time.time() - t0
         print(f"{'fast num_proc=' + str(nproc):<28}{dt:>12.3f}{serial_t / dt:>12.2f}")
+        runs.append(
+            {
+                "num_proc": nproc,
+                "wall_s": dt,
+                "speedup": serial_t / dt,
+                "label": f"fast num_proc={nproc}",
+            }
+        )
+
+    if args.json is not None:
+        payload = {
+            "grid": list(grid),
+            "n_points": npts,
+            "batch_size": args.batch_size,
+            "omp_num_threads": os.environ.get("OMP_NUM_THREADS"),
+            "n_atoms": len(atoms),
+            "poscar": str(args.poscar),
+            "runs": runs,
+        }
+        args.json.write_text(json.dumps(payload, indent=2))
+        print(f"\nWrote results to {args.json}", flush=True)
 
 
 if __name__ == "__main__":
