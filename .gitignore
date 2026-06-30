@@ -8,6 +8,8 @@ local/
 # Local AI coding-session transcripts (specstory) and scratch scripts
 .specstory/
 scripts/test01/
+# Local reports (theory, testing reports, etc.)
+reports/
 # Cython build artifacts (generated from .pyx; cython is a declared build dependency)
 jlgridfingerprints/src/*.c
 jlgridfingerprints/src/*.html

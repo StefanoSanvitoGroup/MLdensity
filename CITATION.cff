@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the software and the paper below."
+title: "jlgridfingerprints"
+abstract: "Linear Jacobi-Legendre grid fingerprints for machine learning of the electronic charge density."
+type: software
+version: 0.1.2
+repository-code: "https://github.com/StefanoSanvitoGroup/MLdensity"
+authors:
+  - given-names: Bruno
+    family-names: Focassio
+  - given-names: Michelangelo
+    family-names: Domina
+  - given-names: Urvesh
+    family-names: Patil
+  - given-names: Adalberto
+    family-names: Fazzio
+  - given-names: Stefano
+    family-names: Sanvito
+  - given-names: Johannes
+    family-names: Wasmer
+preferred-citation:
+  type: article
+  title: "Linear Jacobi-Legendre expansion of the charge density for machine learning-accelerated electronic structure calculations"
+  doi: "10.1038/s41524-023-01053-0"
+  year: 2023
+  journal: "npj Computational Materials"
+  authors:
+    - given-names: Bruno
+      family-names: Focassio
+    - given-names: Michelangelo
+      family-names: Domina
+    - given-names: Urvesh
+      family-names: Patil
+    - given-names: Adalberto
+      family-names: Fazzio
+    - given-names: Stefano
+      family-names: Sanvito

@@ -12,14 +12,37 @@ from jlgridfingerprints.lib.utils import vector_dot
 from libc.math cimport pi,cos
 
 def expand_jacobi(double[::1] rgi, int nmax, int alpha, int beta, double rcut, double rmin=0, double gamma=1, bint shifted=1, bint double_shifted=0):
-    """Shifted Jacobi polynomial expansion for neighbour distances. See paper for the defination.
+    """Vanishing-Jacobi radial expansion of neighbour distances.
 
-    Args:
-        rij (array): Pair distances
-        shifted (bool, optional): Use the shifted polynomial. Defaults to True.
+    See the JLCDM paper (DOI:10.1038/s41524-023-01053-0) for the definitions.
 
-    Returns:
-        array : Jacobi expansion of shape (nmax,len(rij))
+    Parameters
+    ----------
+    rgi : numpy.ndarray
+        Neighbour distances (1-D, length n_neighbours).
+    nmax : int
+        Maximum Jacobi order.
+    alpha, beta : int
+        Jacobi weighting-function parameters (intended as real values > -1; the
+        public signature currently declares them ``int`` while the internal
+        worker uses ``double``).
+    rcut : float
+        Cutoff radius used in the cosine map.
+    rmin : float, optional
+        Lower edge of the cosine map. Default 0.
+    gamma : float, optional
+        Scaling factor applied to the cosine-mapped variable. Default 1.
+    shifted : bool, optional
+        Use the vanishing-Jacobi polynomials. Default True.
+    double_shifted : bool, optional
+        Use the double-vanishing-Jacobi polynomials, whose orders start at 2
+        instead of 1. Default False.
+
+    Returns
+    -------
+    numpy.ndarray
+        Jacobi expansion of shape ``(n_orders, n_neighbours)``, where
+        ``n_orders`` is ``nmax`` (or ``nmax - 1`` when ``double_shifted``).
     """
 
     cdef int ndist = rgi.shape[0]
@@ -54,14 +77,30 @@ def expand_jacobi(double[::1] rgi, int nmax, int alpha, int beta, double rcut, d
         return pjacobi[1:,:]
 
 def expand_legendre(int lmax, double[:,::1] hat_rgi, double[:,::1] hat_rgj, bint zero_diag=1):
-    """Legendre polynomial expansion for scalar products. See paper for the defination.
-        Args:
-            hatrij (array): Array of unit vectors joining the neighbours.
-            hatrik (array): Array of unit vectors joining the neighbours
-            zero_diag (bool, optional): Zero the diagonal of the expansion matrix. Defaults to True.
-        Returns:
-            array : Legendre expansion of the scalar products for neighbours unit vectors.
-        """
+    """Legendre expansion of the angles between pairs of neighbour versors.
+
+    See the JLCDM paper (DOI:10.1038/s41524-023-01053-0) for the definitions.
+
+    Parameters
+    ----------
+    lmax : int
+        Maximum Legendre order.
+    hat_rgi : numpy.ndarray
+        Unit vectors from the center to the species-i neighbours, shape
+        ``(n_i, 3)``.
+    hat_rgj : numpy.ndarray
+        Unit vectors from the center to the species-j neighbours, shape
+        ``(n_j, 3)``.
+    zero_diag : bool, optional
+        Zero the diagonal of the pair matrix (used when i and j are the same
+        neighbour set, to drop self-pairs). Default True.
+
+    Returns
+    -------
+    numpy.ndarray
+        Legendre expansion of shape ``(lmax + 1, n_i, n_j)`` evaluated on the
+        scalar products of the neighbour versors.
+    """
 
     cdef int num_n = hat_rgi.shape[0]
     cdef int num_m = hat_rgj.shape[0]

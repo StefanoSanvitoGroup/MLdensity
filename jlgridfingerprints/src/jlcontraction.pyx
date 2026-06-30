@@ -10,6 +10,21 @@ cimport cython
 from libc.stdlib cimport malloc,free
 
 def calculate_2b(double [:,::1]a):
+    """Contract the 1B (one-body) Jacobi expansion over neighbours.
+
+    (The function name keeps the older atom-centered ``2b`` label; in the
+    grid-centered JLCDM convention this is the 1B term.)
+
+    Parameters
+    ----------
+    a : numpy.ndarray
+        Jacobi expansion of shape ``(nmax, n_neighbours)``.
+
+    Returns
+    -------
+    numpy.ndarray
+        1B coefficients of length ``nmax``, summed over neighbours.
+    """
 
     cdef int nmax = a.shape[0]
     cdef int num_i = a.shape[1]
@@ -34,8 +49,27 @@ def calculate_2b(double [:,::1]a):
     return jacout
 
 def calculate_3b(double [:,::1]a,double [:,::1]b,double [:,:,::1]c):
+    """Contract the 2B (two-body) expansion for a pair of distinct species.
+
+    (The function name keeps the older atom-centered ``3b`` label; in the
+    grid-centered JLCDM convention this is the 2B term.)
+
+    Parameters
+    ----------
+    a : numpy.ndarray
+        Jacobi expansion for species i, shape ``(nmax, n_i)``.
+    b : numpy.ndarray
+        Jacobi expansion for species j, shape ``(nmax, n_j)``.
+    c : numpy.ndarray
+        Legendre expansion of the i-j angles, shape ``(lmax, n_i, n_j)``.
+
+    Returns
+    -------
+    numpy.ndarray
+        2B coefficients of length ``nmax * nmax * lmax``.
+    """
     cdef int nmax = a.shape[0]
-    
+
     cdef int lmax = c.shape[0]
 
     cdef int n4 = a.shape[1]
@@ -78,9 +112,28 @@ def calculate_3b(double [:,::1]a,double [:,::1]b,double [:,:,::1]c):
     return jacout
 
 def calculate_3b_upper(double [:,::1]a,double [:,::1]b,double [:,:,::1]c):
+    """Contract the 2B (two-body) expansion for a single species (i == j).
+
+    Like :func:`calculate_3b` but keeps only the upper triangle of the
+    ``nmax x nmax`` radial index pair, which is symmetric in this case. (The
+    function name keeps the older atom-centered ``3b`` label; in the
+    grid-centered JLCDM convention this is the 2B term.)
+
+    Parameters
+    ----------
+    a, b : numpy.ndarray
+        Jacobi expansion for the species, shape ``(nmax, n)``.
+    c : numpy.ndarray
+        Legendre expansion of the angles, shape ``(lmax, n, n)``.
+
+    Returns
+    -------
+    numpy.ndarray
+        2B coefficients of length ``nmax * (nmax + 1) / 2 * lmax``.
+    """
     cdef int nmax = a.shape[0]
     cdef int lmax = c.shape[0]
-    
+
     cdef int n4 = a.shape[1]
     cdef int n5 = b.shape[1]
 

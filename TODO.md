@@ -1,11 +1,12 @@
 # TODO
 
-## Package standards (do first)
+Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), by version.
 
-- [ ] Docstrings + function-signature type hints across `jlgridfingerprints/` (currently largely absent).
-- [ ] LICENSE (pending choice from Sanvito group; improvements below can land before it).
-- [ ] Tests.
-- [ ] CITATION.cff.
+## Package standards — remaining
+
+- [ ] LICENSE + pyproject `license` field (pending Sanvito group's choice — can land last).
+- [ ] Zenodo release→DOI: enable GitHub–Zenodo integration, cut a release (post-merge).
+- [ ] Follow-up (found while adding docstrings): `expand_jacobi` in `src/polynomials.pyx` declares `int alpha, int beta`, but the example pipelines pass floats (e.g. `7.875`) and the internal `calculate_jacobi` uses `double` — likely α/β truncation bug. Numerical behavior → verify with the Sanvito group before any fix.
 
 ## Integrate the `fast-predictor` module (after package-standards work above)
 
