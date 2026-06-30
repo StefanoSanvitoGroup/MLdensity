@@ -51,10 +51,16 @@ dependencies = [
     "pyyaml"
 ]
 
+[project.optional-dependencies]
+test = ["pytest"]
+
 [project.urls]
 Repository = "https://github.com/stefanosanvitogroup/MLdensity"
 Paper = "https://doi.org/10.1038/s41524-023-01053-0"
 Dataset = "https://doi.org/10.5281/zenodo.7922012"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 # Maintained package surface only; the per-material example dirs are paper-tied
