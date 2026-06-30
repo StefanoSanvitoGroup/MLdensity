@@ -1,22 +1,12 @@
 # TODO
 
-## Package standards (do first)
+Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), by version.
 
-Order: tooling → metadata → docs → tests → CI → citation/contributing/readme → license → release.
-FAIR minimum for a single-maintainer project — no docs site, mypy, coverage gates, tox, or dependabot.
+## Package standards — remaining
 
-- [x] Ruff config (`[tool.ruff]`) + pre-commit (ruff hook); apply one repo-wide format pass.
-- [x] Complete pyproject metadata: `description`, `readme`, `authors`, `requires-python`, `urls`, `keywords`, `classifiers`; lower bounds on numpy/ase/pymatgen.
-- [x] Numpy-style docstrings + signature type hints on the public API (`JLGridFingerprints`, `JLPredictor`, `tools.py`, public Cython functions).
-  - [ ] Follow-up (found while adding docstrings): `expand_jacobi` in `src/polynomials.pyx` declares `int alpha, int beta`, but the example pipelines pass floats (e.g. `7.875`) and the internal `calculate_jacobi` uses `double` — likely α/β truncation bug. Numerical behavior → verify with the Sanvito group before any fix.
-- [x] Smoke tests (pytest): import; fingerprint shape on a tiny structure; predictor round-trip. (May grow to its own branch.) Note: tools tests run anywhere; fingerprint/predictor tests need built extensions, so they `importorskip` locally and are verified in CI.
-- [x] GitHub Actions: build Cython extensions + run pytest on push/PR (plus a ruff lint job).
-- [x] README quickstart (~10-line usage block).
-- [x] CITATION.cff (paper DOI; software + preferred-citation).
-- [x] CONTRIBUTING.md (short).
 - [ ] LICENSE + pyproject `license` field (pending Sanvito group's choice — can land last).
-- [ ] Version bump 0.1.1 → 0.1.2 (final commit: pyproject, CITATION.cff, CHANGELOG).
 - [ ] Zenodo release→DOI: enable GitHub–Zenodo integration, cut a release (post-merge).
+- [ ] Follow-up (found while adding docstrings): `expand_jacobi` in `src/polynomials.pyx` declares `int alpha, int beta`, but the example pipelines pass floats (e.g. `7.875`) and the internal `calculate_jacobi` uses `double` — likely α/β truncation bug. Numerical behavior → verify with the Sanvito group before any fix.
 
 ## Integrate the `fast-predictor` module (after package-standards work above)
 
