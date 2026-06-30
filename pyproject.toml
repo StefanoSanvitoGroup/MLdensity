@@ -20,3 +20,13 @@ dependencies = [
     "tqdm",
     "pyyaml"
 ]
+
+[tool.ruff]
+# Maintained package surface only; the per-material example dirs are paper-tied
+# reference workflows left as-is.
+extend-exclude = ["aluminium", "benzene", "molybdenium", "2d_mos2"]
+target-version = "py310"
+
+[tool.ruff.lint]
+# E501 (line length) is owned by the formatter, not enforced as a lint rule.
+select = ["E4", "E7", "E9", "F", "I", "UP", "W"]

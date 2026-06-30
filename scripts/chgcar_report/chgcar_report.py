@@ -39,29 +39,29 @@ from pymatgen.io.vasp.outputs import Chgcar
 
 
 def report_one(folder, chgcar_name):
-    poscar_path = os.path.join(folder, 'POSCAR')
+    poscar_path = os.path.join(folder, "POSCAR")
     chgcar_path = os.path.join(folder, chgcar_name)
     if not (os.path.isfile(poscar_path) and os.path.isfile(chgcar_path)):
         return None
     atoms = read(poscar_path)
     chgcar = Chgcar.from_file(chgcar_path)
-    raw = chgcar.data['total']
+    raw = chgcar.data["total"]
     vol = atoms.get_volume()
     a_prim = np.linalg.norm(atoms.get_cell()[0])
     n = raw / vol
     abs_n = np.abs(n.ravel())
     p = np.percentile(abs_n, [1, 25, 50, 75, 99])
     return {
-        'folder': os.path.basename(folder.rstrip('/')),
-        'natoms': len(atoms),
-        'a_prim': a_prim,
-        'vol': vol,
-        'grid': raw.shape,
-        'voxel': vol / raw.size,
-        'n_min': float(n.min()),
-        'n_mean': float(n.mean()),
-        'n_max': float(n.max()),
-        'abs_n_pcts': p,
+        "folder": os.path.basename(folder.rstrip("/")),
+        "natoms": len(atoms),
+        "a_prim": a_prim,
+        "vol": vol,
+        "grid": raw.shape,
+        "voxel": vol / raw.size,
+        "n_min": float(n.min()),
+        "n_mean": float(n.mean()),
+        "n_max": float(n.max()),
+        "abs_n_pcts": p,
     }
 
 
@@ -71,19 +71,19 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        'pattern',
-        help='Glob matching folders, each containing POSCAR and a CHGCAR file',
+        "pattern",
+        help="Glob matching folders, each containing POSCAR and a CHGCAR file",
     )
     parser.add_argument(
-        '--chgcar-name',
-        default='CHGCAR',
-        help='Filename of the CHGCAR within each folder (default: CHGCAR)',
+        "--chgcar-name",
+        default="CHGCAR",
+        help="Filename of the CHGCAR within each folder (default: CHGCAR)",
     )
     args = parser.parse_args()
 
     folders = sorted(f for f in glob.glob(args.pattern) if os.path.isdir(f))
     if not folders:
-        print(f'No folders matched: {args.pattern}', file=sys.stderr)
+        print(f"No folders matched: {args.pattern}", file=sys.stderr)
         sys.exit(1)
 
     rows = []
@@ -91,7 +91,7 @@ def main():
         r = report_one(f, args.chgcar_name)
         if r is None:
             print(
-                f'Skip (missing POSCAR or {args.chgcar_name}): {f}',
+                f"Skip (missing POSCAR or {args.chgcar_name}): {f}",
                 file=sys.stderr,
             )
             continue
@@ -101,27 +101,23 @@ def main():
         sys.exit(1)
 
     header = (
-        f'{"folder":32s} {"nat":>3s} {"a_prim":>7s} {"vol":>8s} '
-        f'{"grid":>14s} {"voxel":>11s}  '
-        f'{"n[min/mean/max]":>26s}  |n|[1/25/50/75/99 %]'
+        f"{'folder':32s} {'nat':>3s} {'a_prim':>7s} {'vol':>8s} "
+        f"{'grid':>14s} {'voxel':>11s}  "
+        f"{'n[min/mean/max]':>26s}  |n|[1/25/50/75/99 %]"
     )
     print(header)
-    print('-' * len(header))
+    print("-" * len(header))
     for r in rows:
-        grid_str = 'x'.join(str(x) for x in r['grid'])
-        n_str = (
-            f'{r["n_min"]:+.3g}/{r["n_mean"]:+.3g}/{r["n_max"]:+.3g}'
-        )
-        p = r['abs_n_pcts']
-        p_str = (
-            f'{p[0]:.3g}/{p[1]:.3g}/{p[2]:.3g}/{p[3]:.3g}/{p[4]:.3g}'
-        )
+        grid_str = "x".join(str(x) for x in r["grid"])
+        n_str = f"{r['n_min']:+.3g}/{r['n_mean']:+.3g}/{r['n_max']:+.3g}"
+        p = r["abs_n_pcts"]
+        p_str = f"{p[0]:.3g}/{p[1]:.3g}/{p[2]:.3g}/{p[3]:.3g}/{p[4]:.3g}"
         print(
-            f'{r["folder"]:32s} {r["natoms"]:>3d} {r["a_prim"]:>7.3f} '
-            f'{r["vol"]:>8.3f} {grid_str:>14s} {r["voxel"]:>11.3e}  '
-            f'{n_str:>26s}  {p_str}'
+            f"{r['folder']:32s} {r['natoms']:>3d} {r['a_prim']:>7.3f} "
+            f"{r['vol']:>8.3f} {grid_str:>14s} {r['voxel']:>11.3e}  "
+            f"{n_str:>26s}  {p_str}"
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
