@@ -8,24 +8,25 @@ Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), by version.
 - [ ] Zenodo release→DOI: enable GitHub–Zenodo integration, cut a release (post-merge).
 - [ ] Follow-up (found while adding docstrings): `expand_jacobi` in `src/polynomials.pyx` declares `int alpha, int beta`, but the example pipelines pass floats (e.g. `7.875`) and the internal `calculate_jacobi` uses `double` — likely α/β truncation bug. Numerical behavior → verify with the Sanvito group before any fix.
 
-## Integrate the `fast-predictor` module (after package-standards work above)
+## Integrate the `fast-predictor` module — DONE (branch `fast-predictor`, see CHANGELOG)
 
-Faster `JLPredictor` variant from the Sanvito group (Luke; orig. Urvesh). Received as
-`jlgridfingerprints/fast-predictor.py` (removed for now). What it adds over `predictor.py`:
+Faster `JLPredictor` variant from the Sanvito group (Luke; orig. Urvesh), integrated as a
+subclass of `predictor.JLPredictor` in `jlgridfingerprints/fast_predictor.py`. What it adds over
+`predictor.py`:
 
 - `num_proc` arg → parallelizes per-batch fingerprint creation + prediction over a
-  `multiprocessing.Pool`; streams results via `more_itertools.batched` + `np.fromiter`
+  `multiprocessing.Pool`; streams results via a batched iterator + `np.fromiter`
   instead of the sequential `np.append` chunk loop.
 - Normalization made opt-in (`normalize=False`); original always normalized.
 - New `predict_key_chgcar(...)` for an explicit point set + grid size.
 
-Fix on integration (bugs in the received file):
+Bugs fixed on integration (in the received file):
 
-- [ ] Restore `from ase.units import Bohr, Rydberg` (dropped → `get_chgcar_grid` NameErrors).
-- [ ] `use_scaler` scales into an unused `X_`; predict on the scaled array.
-- [ ] Remove duplicate `normalize_nelect` definition.
-- [ ] `calc_fn` closure isn't picklable under the spawn start method (macOS/Windows); make it a module/method-level callable.
-- [ ] Rename to importable `fast_predictor.py` (hyphen breaks `import`).
+- [x] Restore `from ase.units import Bohr, Rydberg` — fixed by inheriting `get_chgcar_grid`.
+- [x] `use_scaler` scaled into an unused `X_`; now predicts on the scaled array.
+- [x] Remove duplicate `normalize_nelect` definition — gone (inherited).
+- [x] `calc_fn` closure isn't picklable under the spawn start method (macOS/Windows); replaced with a module-level worker + `Pool(initializer=...)`.
+- [x] Rename to importable `fast_predictor.py` (hyphen breaks `import`).
 
 ## Performance: parallelize `JLGridFingerprints.create()` over centers, not inside the contraction kernel
 

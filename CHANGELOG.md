@@ -1,5 +1,25 @@
 # Changelog
 
+## [Unreleased] — branch `fast-predictor`
+
+### Features
+
+- [x] Integrate the parallel `fast_predictor.JLPredictor` from the Sanvito group as a subclass of the serial `predictor.JLPredictor`. Adds a `num_proc` argument that evaluates the FFT grid over a `multiprocessing.Pool` (per-batch fingerprint creation + prediction, streamed via `np.fromiter`), opt-in renormalisation (`normalize=False` — the serial predictor always normalises), and `predict_key_chgcar(...)` for predicting on an explicit point set + grid shape.
+
+### Bug fixes (in the received `fast_predictor.py`)
+
+- [x] `get_chgcar_grid` referenced `Bohr`/`Rydberg` with the import dropped (NameError) — fixed by inheriting the method from `predictor.JLPredictor`.
+- [x] `use_scaler` transformed into an unused variable and then predicted on the unscaled features — fixed in the shared evaluation helper.
+- [x] Removed a duplicate `normalize_nelect` definition (now inherited).
+- [x] Replaced the unpicklable per-call closure (broken under the `spawn` start method on macOS/Windows) with a module-level worker + `Pool(initializer=...)`.
+- [x] Removed stray debug prints and a `np.save(...)` side-effect that wrote to the CWD.
+
+### Tests / Docs
+
+- [x] Add `tests/test_fast_predictor.py`: assert the fast predictor matches the serial one across serial, batched and multiprocessing paths, and that `predict_key_chgcar` matches `predict_chgcar`.
+- [x] Add `scripts/benchmark_predictors.py`: serial vs parallel wall-time + speedup on a real aluminium frame.
+- [x] Document the two predictor variants in the README, including the requirement to set `OMP_NUM_THREADS=1` when using `num_proc > 1` — `JLGridFingerprints.create` uses OpenMP, so otherwise each worker process oversubscribes the cores and the parallel path runs ~20–30× *slower* than serial (measured). The benchmark script warns when this is unset.
+
 ## [0.1.2] - 2026-06-30 — branch `improve-package-standards`
 
 ### Tooling
