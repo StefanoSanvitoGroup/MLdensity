@@ -2,10 +2,19 @@
 
 ## Package standards (do first)
 
-- [ ] Docstrings + function-signature type hints across `jlgridfingerprints/` (currently largely absent).
-- [ ] LICENSE (pending choice from Sanvito group; improvements below can land before it).
-- [ ] Tests.
-- [ ] CITATION.cff.
+Order: tooling → metadata → docs → tests → CI → citation/contributing/readme → license → release.
+FAIR minimum for a single-maintainer project — no docs site, mypy, coverage gates, tox, or dependabot.
+
+- [ ] Ruff config (`[tool.ruff]`) + pre-commit (ruff hook); apply one repo-wide format pass.
+- [ ] Complete pyproject metadata: `description`, `readme`, `authors`, `requires-python`, `urls`, `keywords`, `classifiers`; lower bounds on numpy/ase/pymatgen.
+- [ ] Numpy-style docstrings + signature type hints on the public API (`JLGridFingerprints`, `JLPredictor`, `tools.py`, public Cython functions).
+- [ ] Smoke tests (pytest): import; fingerprint shape on a tiny structure; predictor round-trip. (May grow to its own branch.)
+- [ ] GitHub Actions: build Cython extensions + run pytest on push/PR.
+- [ ] README quickstart (~10-line usage block).
+- [ ] CITATION.cff (existing paper DOI + Zenodo).
+- [ ] CONTRIBUTING.md (short).
+- [ ] LICENSE + pyproject `license` field (pending Sanvito group's choice — can land last).
+- [ ] Zenodo release→DOI: enable GitHub–Zenodo integration, cut a release (post-merge).
 
 ## Integrate the `fast-predictor` module (after package-standards work above)
 
