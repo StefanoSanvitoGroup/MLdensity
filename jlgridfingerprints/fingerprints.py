@@ -34,7 +34,7 @@ class JLGridFingerprints:
     one-body (``1B``) term here, and the three-body term becomes the two-body
     (``2B``) term. The public API uses this grid-centered (1B/2B) convention;
     some internal names (the :meth:`create_2b_jl` / :meth:`create_3b_jl`
-    methods and the ``_do_2b_jl`` / ``_do_3b_jl`` flags) retain the 
+    methods and the ``_do_2b_jl`` / ``_do_3b_jl`` flags) retain the
     atom-centered labels.
 
     - **1B term**: radial expansion in (vanishing-)Jacobi polynomials over the
