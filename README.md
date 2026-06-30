@@ -37,7 +37,51 @@ the root-level `setup.py` / `pyproject.toml`.
 
 ## Usage
 
-Play with the examples in the `aluminium/`, `benzene/`, `molybdenium/`, and `2d_mos2/` directories.
+### Quickstart
+
+Evaluate Jacobi-Legendre fingerprints on a grid of points for a structure:
+
+```python
+from ase.build import bulk
+
+from jlgridfingerprints.fingerprints import JLGridFingerprints
+from jlgridfingerprints.tools import create_grid_coords
+
+# Descriptor hyperparameters (see the paper for definitions).
+# body "1" = 1B radial term, "2" = 2B radial-angular term.
+settings = {
+    "rcut": 4.08,
+    "nmax": [15, 6],          # radial orders for the 1B and 2B terms
+    "lmax": 6,                # angular order for the 2B term
+    "alpha": [7.875, 5.875],
+    "beta": [3.624, 1.751],
+    "rmin": -0.74,
+    "species": ["Al"],
+    "body": "1+2",
+    "periodic": True,
+    "double_shifted": True,
+}
+
+atoms = bulk("Al", "fcc", a=4.05)
+jl = JLGridFingerprints(**settings)
+
+# Grid of points spanning the cell (small grid here for illustration).
+centers = create_grid_coords(
+    grid_size=(20, 20, 20),
+    return_cartesian_coords=True,
+    a_vectors=atoms.get_cell().array,
+)
+
+X = jl.create(atoms, centers)   # shape: (n_centers, jl._n_features)
+```
+
+To predict a full charge density and write a VASP CHGCAR, use
+`jlgridfingerprints.predictor.JLPredictor` with a trained model.
+
+### Examples
+
+Full training and prediction pipelines are in the `aluminium/`, `benzene/`,
+`molybdenium/`, and `2d_mos2/` directories.
 
 ## Containerized development
 
