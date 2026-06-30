@@ -5,8 +5,8 @@
 Order: tooling → metadata → docs → tests → CI → citation/contributing/readme → license → release.
 FAIR minimum for a single-maintainer project — no docs site, mypy, coverage gates, tox, or dependabot.
 
-- [ ] Ruff config (`[tool.ruff]`) + pre-commit (ruff hook); apply one repo-wide format pass.
-- [ ] Complete pyproject metadata: `description`, `readme`, `authors`, `requires-python`, `urls`, `keywords`, `classifiers`; lower bounds on numpy/ase/pymatgen.
+- [x] Ruff config (`[tool.ruff]`) + pre-commit (ruff hook); apply one repo-wide format pass.
+- [x] Complete pyproject metadata: `description`, `readme`, `authors`, `requires-python`, `urls`, `keywords`, `classifiers`; lower bounds on numpy/ase/pymatgen.
 - [ ] Numpy-style docstrings + signature type hints on the public API (`JLGridFingerprints`, `JLPredictor`, `tools.py`, public Cython functions).
 - [ ] Smoke tests (pytest): import; fingerprint shape on a tiny structure; predictor round-trip. (May grow to its own branch.)
 - [ ] GitHub Actions: build Cython extensions + run pytest on push/PR.

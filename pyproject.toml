@@ -5,14 +5,44 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jlgridfingerprints"
 version = "0.1.1"
+description = "Linear Jacobi-Legendre grid fingerprints for machine learning of the electronic charge density"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Bruno Focassio"},
+    {name = "Michelangelo Domina"},
+    {name = "Urvesh Patil"},
+    {name = "Adalberto Fazzio"},
+    {name = "Stefano Sanvito"},
+    {name = "Johannes Wasmer", email = "j.wasmer@fz-juelich.de"},
+]
+keywords = [
+    "machine-learning",
+    "charge-density",
+    "electronic-structure",
+    "DFT",
+    "descriptors",
+    "Jacobi-Legendre",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Operating System :: POSIX :: Linux",
+]
 dependencies = [
-    "numpy",
+    "numpy>=1.23",
     "scipy",
     "sympy",
     "pandas",
     "h5py",
-    "ase",
-    "pymatgen",
+    "ase>=3.22",
+    "pymatgen>=2023.1.0",
     "spglib",
     "scikit-learn>=1.4",
     "matplotlib",
@@ -20,6 +50,11 @@ dependencies = [
     "tqdm",
     "pyyaml"
 ]
+
+[project.urls]
+Repository = "https://github.com/stefanosanvitogroup/MLdensity"
+Paper = "https://doi.org/10.1038/s41524-023-01053-0"
+Dataset = "https://doi.org/10.5281/zenodo.7922012"
 
 [tool.ruff]
 # Maintained package surface only; the per-material example dirs are paper-tied
