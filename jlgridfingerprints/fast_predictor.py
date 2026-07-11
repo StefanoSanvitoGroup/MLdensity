@@ -141,7 +141,14 @@ class JLPredictor(_SerialPredictor):
         batches = _batched(cart_positions, batch_size)
 
         if num_proc > 1:
-            with mp.Pool(
+            # Force "spawn": the default "fork" (Linux, Python <= 3.13) deadlocks
+            # because JLGridFingerprints.create links OpenMP, and forking a process
+            # with an initialised OpenMP runtime inherits locked thread state.
+            # Python 3.14 changed the Linux default to "forkserver", which is why
+            # this only hung on 3.10. spawn is portable and matches the
+            # picklable-worker design above.
+            ctx = mp.get_context("spawn")
+            with ctx.Pool(
                 processes=num_proc, initializer=_worker_init, initargs=init_args
             ) as pool:
                 # imap (not map) streams results lazily, keeping peak memory low.
