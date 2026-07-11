@@ -119,7 +119,17 @@ class JLPredictor(_SerialPredictor):
             Flat ``(N,)`` array of predicted point densities.
         """
 
+        if num_proc > 1 and not batch_size:
+            raise ValueError("num_proc > 1 requires batch_size to be set")
+        if batch_size is not None and batch_size <= 0:
+            raise ValueError("batch_size must be a positive integer")
+
         scaler = getattr(self, "scaler", None)
+        if use_scaler and scaler is None:
+            raise ValueError(
+                "use_scaler=True but no scaler was loaded; "
+                "pass scaler_path to the constructor"
+            )
 
         if num_proc == 1 and batch_size is None:
             X = self.jl.create(atoms, cart_positions)
@@ -134,11 +144,12 @@ class JLPredictor(_SerialPredictor):
             with mp.Pool(
                 processes=num_proc, initializer=_worker_init, initargs=init_args
             ) as pool:
-                results = pool.map(_predict_batch, batches)
-        else:
-            _worker_init(*init_args)
-            results = map(_predict_batch, batches)
+                # imap (not map) streams results lazily, keeping peak memory low.
+                results = pool.imap(_predict_batch, batches)
+                return np.fromiter(chain.from_iterable(results), dtype=np.float64)
 
+        _worker_init(*init_args)
+        results = map(_predict_batch, batches)
         return np.fromiter(chain.from_iterable(results), dtype=np.float64)
 
     def _write_chgcar(
@@ -213,9 +224,6 @@ class JLPredictor(_SerialPredictor):
             The ``(nx, ny, nz)`` density grid if ``return_chg`` is ``True``,
             otherwise ``None``.
         """
-
-        if batch_size is None:
-            assert num_proc == 1, "num_proc > 1 requires batch_size to be set"
 
         vol = atoms.cell.volume
 
@@ -333,8 +341,12 @@ class JLPredictor(_SerialPredictor):
             otherwise ``None``.
         """
 
-        if batch_size is None:
-            assert num_proc == 1, "num_proc > 1 requires batch_size to be set"
+        n_expected = int(np.prod(gridsize))
+        if len(cart_positions) != n_expected:
+            raise ValueError(
+                f"cart_positions has {len(cart_positions)} points but gridsize "
+                f"{tuple(gridsize)} implies {n_expected}"
+            )
 
         vol = atoms.get_volume()
 

@@ -43,6 +43,11 @@ SETTINGS = {
 GRID = (4, 4, 4)
 NELECT = 1.0
 
+# Tight tolerance, not exact equality: JLGridFingerprints.create uses OpenMP, whose
+# parallel floating-point reductions are not bit-reproducible across processes/thread
+# counts. A genuine regression would be orders of magnitude larger than this.
+ATOL = 1e-10
+
 
 @pytest.fixture
 def atoms():
@@ -83,7 +88,7 @@ def test_fast_serial_path_matches_serial(atoms, model_path, serial_chg):
         atoms, nelect=NELECT, normalize=True, write_chgcar=False, return_chg=True
     )
     assert chg.shape == GRID
-    assert np.allclose(chg, serial_chg)
+    assert np.allclose(chg, serial_chg, rtol=0, atol=ATOL)
 
 
 def test_fast_batched_matches_serial(atoms, model_path, serial_chg):
@@ -97,7 +102,7 @@ def test_fast_batched_matches_serial(atoms, model_path, serial_chg):
         write_chgcar=False,
         return_chg=True,
     )
-    assert np.allclose(chg, serial_chg)
+    assert np.allclose(chg, serial_chg, rtol=0, atol=ATOL)
 
 
 def test_fast_multiprocess_matches_serial(atoms, model_path, serial_chg):
@@ -111,7 +116,7 @@ def test_fast_multiprocess_matches_serial(atoms, model_path, serial_chg):
         write_chgcar=False,
         return_chg=True,
     )
-    assert np.allclose(chg, serial_chg)
+    assert np.allclose(chg, serial_chg, rtol=0, atol=ATOL)
 
 
 def test_predict_key_chgcar_matches_predict_chgcar(atoms, model_path):
@@ -132,4 +137,4 @@ def test_predict_key_chgcar_matches_predict_chgcar(atoms, model_path):
         write_chgcar=False,
         return_chg=True,
     )
-    assert np.allclose(chg_key, chg_full)
+    assert np.allclose(chg_key, chg_full, rtol=0, atol=ATOL)
