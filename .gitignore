@@ -2,11 +2,16 @@
 ############################################################
 # Project-specific gitignore commands START
 ############################################################
+# data files
 CHGCAR
 *.h5
-local/
 # Local AI coding-session transcripts (specstory) and scratch scripts
 .specstory/
+# Obsidian
+.obsidian/
+# local development files
+local/
+# scripts
 scripts/test01/
 # Local reports (theory, testing reports, etc.)
 reports/
