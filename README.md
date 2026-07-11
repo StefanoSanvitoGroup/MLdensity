@@ -116,7 +116,7 @@ process-spawn/pickling overhead — expect roughly linear scaling with `num_proc
 to the core count. On small grids the parallel path is *slower*. Note `normalize`
 defaults to `False` here (the serial predictor always normalizes), so pass
 `normalize=True` to match it. Measure on your own data with
-`scripts/benchmark_predictors.py`.
+`scripts/benchmark_predictors/benchmark_predictors.py`.
 
 ### Examples
 

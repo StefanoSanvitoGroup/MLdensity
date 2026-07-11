@@ -4,7 +4,7 @@ These assert the fast predictor produces the *same* density as the serial
 :class:`jlgridfingerprints.predictor.JLPredictor` across its serial, batched and
 multiprocessing paths. They make no timing claims: at this grid size the parallel
 path is slower than serial (process overhead dominates), so the speedup is measured
-separately in ``scripts/benchmark_predictors.py``.
+separately in ``scripts/benchmark_predictors/benchmark_predictors.py``.
 
 Like ``test_fingerprints.py`` these require the compiled Cython extensions and are
 skipped if they are not built.

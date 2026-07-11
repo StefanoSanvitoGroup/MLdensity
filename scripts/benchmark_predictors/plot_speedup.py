@@ -2,8 +2,7 @@
 """Plot a JLPredictor speedup sweep from a benchmark_predictors.py JSON file.
 
 Usage:
-    python scripts/plot_speedup.py reports/data/benchmark_th1-2020-64.json \
-        --out reports/figures/speedup.png
+    python scripts/benchmark_predictors/plot_speedup.py results.json --out speedup.png
 """
 
 from __future__ import annotations

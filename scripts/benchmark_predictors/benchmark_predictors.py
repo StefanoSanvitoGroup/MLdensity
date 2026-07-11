@@ -46,7 +46,7 @@ SETTINGS = {
     "double_shifted": True,
 }
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 DEFAULT_POSCAR = REPO / "aluminium/data_scf/test_scf/10/POSCAR"
 DEFAULT_MODEL = REPO / "aluminium/ml_model/train_ml/scikit_linear_model_chg.p"
 

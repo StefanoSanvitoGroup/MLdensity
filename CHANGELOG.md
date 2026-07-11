@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — branch `fast-predictor`
+## [0.1.3] - 2026-07-11 — branch `fast-predictor`
 
 ### Features
 
@@ -17,9 +17,9 @@
 ### Tests / Docs
 
 - [x] Add `tests/test_fast_predictor.py`: assert the fast predictor matches the serial one across serial, batched and multiprocessing paths, and that `predict_key_chgcar` matches `predict_chgcar`.
-- [x] Add `scripts/benchmark_predictors.py` (with `--json` output) and `scripts/plot_speedup.py`: serial vs parallel wall-time + speedup on a real aluminium frame.
+- [x] Add `scripts/benchmark_predictors/` (`benchmark_predictors.py` with `--json` output, and `plot_speedup.py`): serial vs parallel wall-time + speedup on a real aluminium frame.
 - [x] Document the two predictor variants in the README, including the requirement to set `OMP_NUM_THREADS=1` when using `num_proc > 1` — `JLGridFingerprints.create` uses OpenMP, so otherwise each worker process oversubscribes the cores and the parallel path runs ~20–30× *slower* than serial (measured). The benchmark script warns when this is unset.
-- [x] Add `reports/predictor-comparison.md` with the full comparison and a measured speedup plot. On iffSLURM `th1-2020-64` (32 cores, full 140³ grid, `OMP_NUM_THREADS=1`) the parallel predictor reaches 6.2× at `num_proc=8` and 11.1× at `num_proc=16` (efficiency tails off beyond ~16).
+- [x] Measured speedup on iffSLURM `th1-2020-64` (32 cores, full 140³ grid, `OMP_NUM_THREADS=1`): the parallel predictor reaches 6.2× at `num_proc=8` and 11.1× at `num_proc=16`, with efficiency tailing off beyond ~16 processes.
 
 ## [0.1.2] - 2026-06-30 — branch `improve-package-standards`
 

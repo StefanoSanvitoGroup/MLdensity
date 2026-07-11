@@ -24,8 +24,9 @@ How it differs from the serial :class:`~jlgridfingerprints.predictor.JLPredictor
 
 The speedup over the serial predictor only materialises on full-size grids, where
 the per-batch fingerprint work dominates the process-spawn and pickling overhead.
-On small grids the parallel path is *slower*. See ``scripts/benchmark_predictors.py``
-for a way to measure it on real data.
+On small grids the parallel path is *slower*. See
+``scripts/benchmark_predictors/benchmark_predictors.py`` for a way to measure it on
+real data.
 """
 
 from __future__ import annotations
