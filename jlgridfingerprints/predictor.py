@@ -60,7 +60,8 @@ class JLPredictor:
         """
 
         if isinstance(jl_settings, str) and jl_settings.endswith(".json"):
-            self.jl_settings = json.load(open(jl_settings))
+            with open(jl_settings, encoding="utf-8") as f:
+                self.jl_settings = json.load(f)
         elif isinstance(jl_settings, dict):
             self.jl_settings = jl_settings
         else:
@@ -74,10 +75,18 @@ class JLPredictor:
         print("Number of JL coefficients: ", self.jl._n_features, flush=True)
 
         print("Loading model from: ", model_path, flush=True)
-        self.model = pickle.load(open(model_path, "rb"))
+        with open(model_path, "rb") as f:
+            self.model = pickle.load(f)
 
         if scaler_path is not None:
-            self.scaler = pickle.load(open(scaler_path, "rb"))
+            with open(scaler_path, "rb") as f:
+                self.scaler = pickle.load(f)
+
+        if grid_size is None and encut is None:
+            raise ValueError(
+                "provide either grid_size (an (nx, ny, nz) triple) or encut "
+                "(in eV); both are None, so the FFT grid cannot be determined"
+            )
 
         self.grid_size = grid_size
 
@@ -170,19 +179,16 @@ class JLPredictor:
             ml_chg_points = self.model.predict(X_batch)
         else:
             nchunks = int(np.ceil(len(cart_positions) / batch_size))
+            chunks = []
             for ib in range(nchunks):
                 X_batch = self.jl.create(
                     atoms, cart_positions[ib * batch_size : (ib + 1) * batch_size]
                 )
                 if use_scaler:
                     X_batch = self.scaler.transform(X_batch)
-                if ib == 0:
-                    ml_chg_points = self.model.predict(X_batch)
-                else:
-                    ml_chg_points = np.append(
-                        ml_chg_points, self.model.predict(X_batch), axis=0
-                    )
+                chunks.append(self.model.predict(X_batch))
             del X_batch
+            ml_chg_points = np.concatenate(chunks, axis=0)
         time_descriptor += time.time() - t_init
 
         ml_chg_points = ml_chg_points.reshape((ngxf, ngyf, ngzf), order="C") * vol

@@ -87,6 +87,12 @@ def sample_charge(
 
     chg = chg.ravel()
 
+    if n_samples > chg.size:
+        raise ValueError(
+            f"n_samples ({n_samples}) exceeds the number of voxels "
+            f"({chg.size}); unique sampling without replacement is impossible"
+        )
+
     n_prob = int(np.ceil(n_samples * (1 - uniform_ratio)))
     n_uniform = n_samples - n_prob
 
