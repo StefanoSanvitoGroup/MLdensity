@@ -12,6 +12,7 @@
 - [x] `use_scaler` transformed into an unused variable and then predicted on the unscaled features — fixed in the shared evaluation helper.
 - [x] Removed a duplicate `normalize_nelect` definition (now inherited).
 - [x] Replaced the unpicklable per-call closure (broken under the `spawn` start method on macOS/Windows) with a module-level worker + `Pool(initializer=...)`.
+- [x] Forced the `spawn` start method for the worker pool: the default `fork` (Linux, Python ≤ 3.13) deadlocks because `JLGridFingerprints.create` links OpenMP and forking an initialised OpenMP runtime inherits locked thread state. Affected any `num_proc > 1` use on those interpreters (surfaced as a hung CI `test (3.10)` job).
 - [x] Removed stray debug prints and a `np.save(...)` side-effect that wrote to the CWD.
 
 ### Tests / Docs
