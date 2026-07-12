@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.4] - 2026-07-11 — branch `fixes/post-review-hygiene`
+
+Addresses GitHub Copilot's automated review of PR #2, filed just after that PR
+merged. Hygiene and input-validation only — no change to numerical behavior for
+valid inputs. Two comments touching sampling math were deferred to TODO.md for
+the Sanvito group; one signature-churn suggestion was declined.
+
+### Bug fixes
+
+- [x] `JLPredictor.__init__` now raises a clear `ValueError` when both `grid_size` and `encut` are `None`, instead of failing later with a cryptic `TypeError` inside `get_chgcar_grid` (`encut / Rydberg` on `None`).
+- [x] `sample_charge` (`tools.py`) now raises a clear `ValueError` when `n_samples` exceeds the voxel count, instead of `numpy`'s opaque "cannot take a larger sample than population" from `rng.choice(replace=False)`.
+- [x] `JLPredictor.__init__` now rejects a `grid_size` that is not an `(nx, ny, nz)` triple, instead of silently ignoring it and falling back to `encut` (which crashed when `encut` was `None`).
+- [x] `predict_chgcar` now validates its inputs up front — `use_scaler=True` without a loaded scaler, and non-positive `batch_size` — mirroring the checks the `fast_predictor.JLPredictor` subclass already performs, so the two predictors fail the same way on the same bad input.
+
+### Robustness / performance
+
+- [x] Wrap the settings-JSON, model, and scaler loads in `JLPredictor.__init__` in `with open(...)` context managers (added explicit UTF-8 encoding for the JSON) so file handles close promptly even if parsing/unpickling raises.
+- [x] Replace the per-chunk `np.append(..., axis=0)` in the batched `predict_chgcar` path (O(n²) reallocation) with list accumulation + a single `np.concatenate`. Output is bit-identical; only the batched large-grid path is affected.
+
 ## [0.1.3] - 2026-07-11 — branch `fast-predictor`
 
 ### Features
