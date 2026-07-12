@@ -11,6 +11,8 @@ the Sanvito group; one signature-churn suggestion was declined.
 
 - [x] `JLPredictor.__init__` now raises a clear `ValueError` when both `grid_size` and `encut` are `None`, instead of failing later with a cryptic `TypeError` inside `get_chgcar_grid` (`encut / Rydberg` on `None`).
 - [x] `sample_charge` (`tools.py`) now raises a clear `ValueError` when `n_samples` exceeds the voxel count, instead of `numpy`'s opaque "cannot take a larger sample than population" from `rng.choice(replace=False)`.
+- [x] `JLPredictor.__init__` now rejects a `grid_size` that is not an `(nx, ny, nz)` triple, instead of silently ignoring it and falling back to `encut` (which crashed when `encut` was `None`).
+- [x] `predict_chgcar` now validates its inputs up front — `use_scaler=True` without a loaded scaler, and non-positive `batch_size` — mirroring the checks the `fast_predictor.JLPredictor` subclass already performs, so the two predictors fail the same way on the same bad input.
 
 ### Robustness / performance
 

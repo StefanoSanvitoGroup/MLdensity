@@ -87,6 +87,10 @@ class JLPredictor:
                 "provide either grid_size (an (nx, ny, nz) triple) or encut "
                 "(in eV); both are None, so the FFT grid cannot be determined"
             )
+        if grid_size is not None and len(grid_size) != 3:
+            raise ValueError(
+                f"grid_size must be an (nx, ny, nz) triple, got length {len(grid_size)}"
+            )
 
         self.grid_size = grid_size
 
@@ -144,12 +148,20 @@ class JLPredictor:
             otherwise ``None``.
         """
 
+        if use_scaler and getattr(self, "scaler", None) is None:
+            raise ValueError(
+                "use_scaler=True but no scaler was loaded; "
+                "pass scaler_path to the constructor"
+            )
+        if batch_size is not None and batch_size <= 0:
+            raise ValueError("batch_size must be a positive integer")
+
         time_descriptor = 0.0
         time_write = 0.0
 
         vol = atoms.cell.volume
 
-        if self.grid_size is not None and len(self.grid_size) == 3:
+        if self.grid_size is not None:
             ngxf, ngyf, ngzf = np.array(self.grid_size, dtype=int)
         else:
             alats = np.linalg.norm(atoms.get_cell().array, axis=-1)
