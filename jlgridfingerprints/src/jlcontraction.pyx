@@ -4,7 +4,6 @@
 # cython: cdivision=True
 # cython: initializedcheck=False
 import numpy as np
-from cython.parallel import prange
 cimport numpy as np
 cimport cython
 from libc.stdlib cimport malloc,free
@@ -89,14 +88,14 @@ def calculate_3b(double [:,::1]a,double [:,::1]b,double [:,:,::1]c):
     cdef double b1 = 0
     cdef double c1 = 0
 
-    for i in prange(ndes,nogil=True):
+    for i in range(ndes):
         jac[i] = d
 
     cdef int k1 = nmax*lmax
 
-    for i1 in prange(nmax,nogil=True):
-        for i2 in prange(nmax):
-            for i3 in prange(lmax):
+    for i1 in range(nmax):
+        for i2 in range(nmax):
+            for i3 in range(lmax):
                 i = i1*k1 + i2*lmax + i3
                 s = 0
                 for i4 in range(n4):
@@ -152,14 +151,14 @@ def calculate_3b_upper(double [:,::1]a,double [:,::1]b,double [:,:,::1]c):
     cdef double b1 = 0
     cdef double c1 = 0
 
-    for i in prange(ndes,nogil=True):
+    for i in range(ndes):
         jac[i] = d
 
     cdef int k1 = (nmax*(nmax+1)/2)
 
-    for i3 in prange(lmax,nogil=True):
-        for i1 in prange(nmax):
-            for i2 in prange(nmax):
+    for i3 in range(lmax):
+        for i1 in range(nmax):
+            for i2 in range(nmax):
                 if (i1 >= i2):
                     i = <int>(i1*nmax - (i1*(i1-1)/2) + (i2-i1) + i3*k1)
                     s = 0
