@@ -43,9 +43,11 @@ SETTINGS = {
 GRID = (4, 4, 4)
 NELECT = 1.0
 
-# Tight tolerance, not exact equality: JLGridFingerprints.create uses OpenMP, whose
-# parallel floating-point reductions are not bit-reproducible across processes/thread
-# counts. A genuine regression would be orders of magnitude larger than this.
+# Tight tolerance, not exact equality. The fingerprints themselves are now
+# bit-reproducible across processes (the Cython kernels dropped OpenMP in v0.1.5,
+# and never had a cross-thread reduction to begin with), but scikit-learn's
+# predict path still goes through a threaded BLAS. A genuine regression would be
+# orders of magnitude larger than this.
 ATOL = 1e-10
 
 
