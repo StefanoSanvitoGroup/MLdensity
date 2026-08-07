@@ -27,6 +27,17 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("json", type=Path)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument(
+        "--mark-centers",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Draw a vertical marker at N centers on the crossover panel, e.g. "
+        "the size one create_data.py frame actually uses.",
+    )
+    p.add_argument(
+        "--mark-label", default="operating point", help="Label for --mark-centers."
+    )
     args = p.parse_args()
 
     data = json.loads(args.json.read_text())
@@ -62,6 +73,13 @@ def main() -> None:
         a = next(ax)
         runs = centers["runs"]
         a.axhline(1.0, ls="--", color="gray", label="break-even")
+        if args.mark_centers is not None:
+            a.axvline(
+                args.mark_centers,
+                ls=":",
+                color="C3",
+                label=f"{args.mark_label} ({args.mark_centers:,})",
+            )
         a.plot(
             [r["n_centers"] for r in runs],
             [r["speedup"] for r in runs],

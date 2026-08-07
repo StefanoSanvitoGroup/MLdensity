@@ -44,8 +44,11 @@ source .venv/bin/activate
 uv pip install -e . --reinstall-package jlgridfingerprints --no-deps
 
 # Confirm the extensions really did drop OpenMP (the premise of this benchmark).
-echo "--- libgomp linkage (expect 0 for all four) ---"
-for so in jlgridfingerprints/lib/*.so; do
+# Filter to this interpreter's ABI tag: a checkout can carry stale .so files from
+# an older Python, and those still link libgomp even though nothing imports them.
+SOEXT=$(python -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
+echo "--- libgomp linkage of *${SOEXT} (expect 0 for all four) ---"
+for so in jlgridfingerprints/lib/*"${SOEXT}"; do
     echo -n "$(basename "$so"): "
     ldd "$so" | grep -c gomp || true
 done
