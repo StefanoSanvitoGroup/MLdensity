@@ -53,8 +53,8 @@ from jlgridfingerprints.tools import create_grid_coords
 # body "1" = 1B radial term, "2" = 2B radial-angular term.
 settings = {
     "rcut": 4.08,
-    "nmax": [15, 6],          # radial orders for the 1B and 2B terms
-    "lmax": 6,                # angular order for the 2B term
+    "nmax": [15, 6],  # radial orders for the 1B and 2B terms
+    "lmax": 6,  # angular order for the 2B term
     "alpha": [7.875, 5.875],
     "beta": [3.624, 1.751],
     "rmin": -0.74,
@@ -74,7 +74,7 @@ centers = create_grid_coords(
     a_vectors=atoms.get_cell().array,
 )
 
-X = jl.create(atoms, centers)   # shape: (n_centers, jl._n_features)
+X = jl.create(atoms, centers)  # shape: (n_centers, jl._n_features)
 ```
 
 To predict a full charge density and write a VASP CHGCAR, use
@@ -119,9 +119,7 @@ default arguments they behave exactly like the serial versions.
 from jlgridfingerprints.fast_predictor import JLPredictor
 
 jl = JLPredictor(jl_settings=settings, model_path="model.p", grid_size=(140, 140, 140))
-chg = jl.predict_chgcar(
-    atoms, nelect=96, batch_size=20000, num_proc=8, normalize=True
-)
+chg = jl.predict_chgcar(atoms, nelect=96, batch_size=20000, num_proc=8, normalize=True)
 ```
 
 Two differences from the serial predictor to know about:
@@ -136,7 +134,7 @@ Two differences from the serial predictor to know about:
 ```python
 from jlgridfingerprints.fast_fingerprints import JLGridFingerprints
 
-jl = JLGridFingerprints(**settings)          # keyword arguments required here
+jl = JLGridFingerprints(**settings)  # keyword arguments required here
 X = jl.create(atoms, centers, batch_size=20000, num_proc=8)
 ```
 
