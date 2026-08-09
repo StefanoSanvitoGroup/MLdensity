@@ -22,7 +22,9 @@ This compiles the Cython extensions automatically as part of the build. No separ
 ```
 jlgridfingerprints/
     fingerprints.py       # JLGridFingerprints descriptor class
-    predictor.py
+    fast_fingerprints.py  # parallel subclass of it (see "Parallelization")
+    predictor.py          # JLPredictor: descriptor -> model -> CHGCAR
+    fast_predictor.py     # parallel subclass of it (see "Parallelization")
     tools.py
     lib/
     src/
@@ -76,47 +78,122 @@ X = jl.create(atoms, centers)   # shape: (n_centers, jl._n_features)
 ```
 
 To predict a full charge density and write a VASP CHGCAR, use
-`jlgridfingerprints.predictor.JLPredictor` with a trained model.
+`jlgridfingerprints.predictor.JLPredictor` with a trained model. Both of these
+have parallel counterparts — see [Parallelization](#parallelization) for which to
+use.
 
-### Predictor variants
+## Parallelization
 
-Two predictors are available:
+There are two parallel classes. **They parallelize the same thing** — the loop
+over grid points — so you pick one, never both.
 
-| Aspect | `predictor.JLPredictor` (serial) | `fast_predictor.JLPredictor` (parallel) |
+### Which one do I want?
+
+**Start here:** are you producing a charge density, or descriptors?
+
+| You want… | Use | Import |
 |---|---|---|
-| Grid evaluation | single process | `num_proc` worker processes (`multiprocessing.Pool`) |
-| Normalization to `nelect` | always | opt-in (`normalize=False` by default) |
-| Extra API | — | `predict_key_chgcar(...)` for an explicit point set |
+| A predicted charge density / CHGCAR | **`fast_predictor.JLPredictor`** | `from jlgridfingerprints.fast_predictor import JLPredictor` |
+| The descriptor matrix itself, ≳ 20,000 points per call | **`fast_fingerprints.JLGridFingerprints`** | `from jlgridfingerprints.fast_fingerprints import JLGridFingerprints` |
+| The descriptor matrix, only a few thousand points per call | the plain serial class | `from jlgridfingerprints.fingerprints import JLGridFingerprints` |
+| To process many small structures/frames | parallelize *your* loop over frames | — |
 
-`fast_predictor.JLPredictor` subclasses the serial one, so construction and the
-grid/normalization maths are identical. To parallelize, pass `num_proc` (and a
-`batch_size`):
+**If in doubt, prefer `fast_predictor`.** Predicting a density is the common
+case, and `fast_predictor` is strictly better at it: it parallelizes the
+descriptor work *and* the model evaluation, and it never holds the full
+descriptor matrix in memory (for a 140³ grid that matrix is **2.6 GB**; the
+predictor streams one batch at a time and keeps one float per point).
+
+Reach for `fast_fingerprints` only when you genuinely need the descriptors —
+training-data generation, analysis, feeding a model this package doesn't own.
+
+### Both classes are drop-in subclasses
+
+Each subclasses its serial counterpart and inherits everything else unchanged,
+so the numerics are identical and you can swap the import back at any time. With
+default arguments they behave exactly like the serial versions.
+
+**Parallel prediction** — pass `num_proc` and a `batch_size`:
 
 ```python
 from jlgridfingerprints.fast_predictor import JLPredictor
 
 jl = JLPredictor(jl_settings=settings, model_path="model.p", grid_size=(140, 140, 140))
-chg = jl.predict_chgcar(atoms, nelect=96, batch_size=100000, num_proc=4, normalize=True)
+chg = jl.predict_chgcar(
+    atoms, nelect=96, batch_size=20000, num_proc=8, normalize=True
+)
 ```
 
-**Required:** set `OMP_NUM_THREADS=1` when using `num_proc > 1`.
-`JLGridFingerprints.create` uses OpenMP internally, so without this each worker
-process also spawns OpenMP threads and oversubscribes the cores — making the
-parallel path *dramatically slower* than serial (measured ~20–30× slower). With
-`OMP_NUM_THREADS=1` each worker is single-threaded and `num_proc` scales as
-intended.
+Two differences from the serial predictor to know about:
+
+- `normalize` defaults to `False` here, whereas the serial predictor *always*
+  renormalizes to `nelect`. Pass `normalize=True` to match it.
+- It adds `predict_key_chgcar(...)`, which predicts on a point set you supply
+  instead of the full FFT grid.
+
+**Parallel descriptors** — same two arguments, on `create`:
+
+```python
+from jlgridfingerprints.fast_fingerprints import JLGridFingerprints
+
+jl = JLGridFingerprints(**settings)          # keyword arguments required here
+X = jl.create(atoms, centers, batch_size=20000, num_proc=8)
+```
+
+`num_proc > 1` requires a `batch_size` in both classes (you get a `ValueError`
+otherwise). A good starting point is a batch size that gives each worker a few
+batches: `batch_size = n_points // (4 * num_proc)`, clamped to at least ~10,000.
+
+### How much does it help?
+
+Measured on 2,744,000 points (a 140³ aluminium grid) on a 20-core node:
+
+| `num_proc` | Wall time | Speedup | Efficiency |
+|---|---|---|---|
+| serial | 355 s | 1.00× | — |
+| 2 | 185 s | 1.92× | 96% |
+| 4 | 99 s | 3.60× | 90% |
+| 8 | 56 s | 6.39× | 80% |
+| 16 | 32 s | 11.20× | 70% |
+
+Roughly linear up to the core count, tailing off gently. Both classes give
+essentially this same curve, because both are parallelizing the same loop.
+
+### When it *hurts*
+
+Starting worker processes costs about **2 seconds** (the `spawn` start method
+builds fresh Python interpreters that re-import numpy, ase and the compiled
+extensions). That cost is fixed, so it only pays off if there is enough work
+behind it. Break-even is around **18,000 points per call**; below that the
+parallel path is slower, and at 1,000 points it is *16× slower*.
+
+This is why the "many small frames" row above says to parallelize your own frame
+loop: one 13,000-point frame is ~1.6 s of work, which cannot absorb a 2 s
+startup, but a whole dataset of frames easily can. Measure your own case with
+`scripts/benchmark_fingerprints/benchmark_fingerprints.py` or
+`scripts/benchmark_predictors/benchmark_predictors.py`.
+
+### `OMP_NUM_THREADS`
+
+Since v0.1.5 the Cython extensions no longer use OpenMP, so **fingerprint work
+needs no environment variable**. (Before v0.1.5, forgetting `OMP_NUM_THREADS=1`
+with `num_proc > 1` caused a ~20–30× *slowdown*.)
+
+Setting it is still worth doing for `fast_predictor`, because scikit-learn pulls
+its own threaded BLAS into every worker process, and those threads oversubscribe
+the cores the same way:
 
 ```bash
 OMP_NUM_THREADS=1 python your_prediction_script.py
 ```
 
-**When it helps:** even with `OMP_NUM_THREADS=1`, the speedup only appears on
-full-size grids, where per-batch fingerprint work dominates the
-process-spawn/pickling overhead — expect roughly linear scaling with `num_proc` up
-to the core count. On small grids the parallel path is *slower*. Note `normalize`
-defaults to `False` here (the serial predictor always normalizes), so pass
-`normalize=True` to match it. Measure on your own data with
-`scripts/benchmark_predictors/benchmark_predictors.py`.
+### Do not nest them
+
+`fast_predictor` already calls the serial `create()` inside each of its workers,
+so wrapping `fast_fingerprints` inside it is the same parallelism twice. It fails
+loudly rather than silently oversubscribing — `multiprocessing.Pool` workers are
+daemonic, so you get `AssertionError: daemonic processes are not allowed to have
+children`.
 
 ### Examples
 

@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.5] - 2026-08-09 — branch `fast-fingerprints`
+
+Moves parallelism to the right loop. `JLGridFingerprints.create()` gains an
+opt-in process-parallel path, and the Cython kernels drop the OpenMP that was
+parallelising a loop far too short to benefit from it.
+
+### Features
+
+- [x] New `fast_fingerprints.JLGridFingerprints`, a subclass of the serial descriptor whose `create()` accepts `batch_size` and `num_proc`. The centers are sliced into contiguous blocks, evaluated over a `multiprocessing.Pool` (`spawn`, module-level worker + `Pool(initializer=...)`), and concatenated back in order. Mirrors the `fast_predictor` design from 0.1.3, adapted for a `(batch, n_features)` payload: contiguous array slicing instead of a tuple chunker, and `np.concatenate(..., axis=0)` instead of `np.fromiter(chain.from_iterable(...))`, which would flatten the feature axis. Must be constructed with keyword arguments (the settings are stashed so workers can rebuild the descriptor under `spawn`).
+- [x] `scripts/benchmark_fingerprints/` — a two-sweep benchmark (strong scaling, and the *crossover* point-set size), a plot script, and an archived SLURM job.
+
+### Performance
+
+- [x] Remove `prange` from `jlcontraction.pyx` and `utils.pyx`, drop the unused `prange` imports from `geometry.pyx` and `polynomials.pyx`, and stop passing `-fopenmp` in `setup.py`. Those loops sat inside a single grid point's ~150-element contraction, invoked once per center (~2.8M times for a 140³ grid), so OpenMP thread-team setup dominated the work they parallelised.
+
+  **Bitwise neutral, verified two ways.** Every `prange` iterated over the *output* index (`jac[i]`, `prod[n,m]`, `vhat[n,j]`) while the accumulators were filled by serial inner `range` loops — there was never a cross-thread reduction in this package, so there is no summation order to change. Confirmed by (a) pre-change output being `np.array_equal` between `OMP_NUM_THREADS` unset and `=1`, and (b) post-change output matching a saved pre-change reference exactly. No `.so` links `libgomp` any more.
+
+### Behavior notes
+
+- [x] `OMP_NUM_THREADS=1` is no longer required for fingerprint work — the ~20–30× slowdown it used to guard against is structurally gone. It remains advisable for `fast_predictor`, where scikit-learn brings its own threaded BLAS into each worker.
+- [x] `fast_fingerprints` and `fast_predictor` parallelise the *same* axis and must not be nested; `multiprocessing.Pool` workers are daemonic, so nesting raises rather than silently oversubscribing.
+
+### Measured (iffSLURM `viti`/`iffcluster0806`, Xeon E5-2680 v2, 20 cores)
+
+- [x] 2,744,000 centers: 355 s serial → 32 s at `num_proc=16` (11.20×, 70% efficiency); 1.92× / 3.60× / 6.39× at 2 / 4 / 8. Batching alone (`num_proc=1`) costs 0.03%, i.e. nothing.
+- [x] Break-even is ~18,500 centers per `create()` call — below it the parallel path is slower. The `create_data.py` pipelines evaluate 13,720 centers per frame and therefore sit *below* it (measured 0.67×); they should parallelise over frames instead. Left to the owners of those example scripts. Full write-up in `reports/fingerprints-parallel/` (untracked, per the `reports/` gitignore convention).
+
 ## [0.1.4] - 2026-07-11 — branch `fixes/post-review-hygiene`
 
 Addresses GitHub Copilot's automated review of PR #2, filed just after that PR
