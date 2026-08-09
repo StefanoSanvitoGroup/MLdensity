@@ -20,8 +20,14 @@ for fname in fnames:
             ["jlgridfingerprints/src/" + fname + ".pyx"],
             include_dirs=[".", np.get_include()],
             libraries=["m"],
-            extra_compile_args=["-O3", "-fopenmp", "-march=native"],
-            extra_link_args=["-O3", "-fopenmp"],
+            # No -fopenmp: the kernels no longer use prange. The OpenMP loops
+            # used to sit inside a single grid point's ~150-element
+            # contraction, called once per center (~2.8M times for a 140^3
+            # grid), so thread-team setup dominated and more threads made it
+            # slower. Parallelism now lives one level up, over centers, in
+            # jlgridfingerprints.fast_fingerprints / fast_predictor.
+            extra_compile_args=["-O3", "-march=native"],
+            extra_link_args=["-O3"],
         )
     ]
 

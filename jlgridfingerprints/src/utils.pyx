@@ -4,7 +4,6 @@
 # cython: cdivision=True
 # cython: initializedcheck=False
 import numpy as np
-from cython.parallel import prange
 cimport numpy as np
 cimport cython
 
@@ -71,17 +70,16 @@ cdef void _get_versors(double [:,::1]vector,double [::1]distance, double[:,::1] 
     cdef double dist = 0
     cdef double thr = 1e-4
 
-    with nogil:
-        for n in prange(num_n):
-            dist = distance[n]
-            if dist > thr:
-                for j in range(dim):
-                    vhat[n,j] = vector[n,j]/dist
-            else:
-                for j in range(dim):
-                    vhat[n,j] = d
-            # for j in range(dim):
-            #     vhat[n,j] = vector[n,j]/dist
+    for n in range(num_n):
+        dist = distance[n]
+        if dist > thr:
+            for j in range(dim):
+                vhat[n,j] = vector[n,j]/dist
+        else:
+            for j in range(dim):
+                vhat[n,j] = d
+        # for j in range(dim):
+        #     vhat[n,j] = vector[n,j]/dist
 
 cdef void _vector_norm(double [:,::1]vector, double[::1] norm):
 
@@ -145,12 +143,12 @@ cdef void _vector_dot(double[:,::1] vector_a,double[:,::1] vector_b, double [:,:
     cdef int l = 0
     cdef int ndim = 3
     
-    for i in prange(num_n,nogil=True):
-        for j in prange(num_m):
+    for i in range(num_n):
+        for j in range(num_m):
             prod[i,j] = d
 
-    for n in prange(num_n,nogil=True):
-        for m in prange(num_m):
+    for n in range(num_n):
+        for m in range(num_m):
             s = 0
             for l in range(ndim):
                 s = s + vector_a[n,l] * vector_b[m,l]

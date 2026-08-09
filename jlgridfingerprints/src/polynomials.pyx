@@ -4,7 +4,6 @@
 # cython: cdivision=True
 # cython: initializedcheck=False
 import numpy as np
-from cython.parallel import prange
 cimport numpy as np
 cimport cython
 
