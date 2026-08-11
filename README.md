@@ -1,7 +1,7 @@
 Paper **"Linear Jacobi-Legendre expansion of the charge density for machine learning-accelerated electronic 
 structure calculations"** at **[DOI:10.1038/s41524-023-01053-0](https://doi.org/10.1038/s41524-023-01053-0)**
 
-Full data available (CHGCAR and POSCAR): https://doi.org/10.5281/zenodo.7922012
+Full dataset available (CHGCAR and POSCAR): https://doi.org/10.5281/zenodo.7922012
 
 ## Installation
 
@@ -81,6 +81,14 @@ To predict a full charge density and write a VASP CHGCAR, use
 `jlgridfingerprints.predictor.JLPredictor` with a trained model. Both of these
 have parallel counterparts — see [Parallelization](#parallelization) for which to
 use.
+
+### Examples
+
+Full training and prediction pipelines are in the `aluminium/`, `benzene/`,
+`molybdenium/`, and `2d_mos2/` directories.
+
+Trained models `example/ml_model/train_ml/*.p` are part of the repo. 
+The `CHGCAR` files required for training these models are in the published dataset.
 
 ## Parallelization
 
@@ -192,11 +200,6 @@ so wrapping `fast_fingerprints` inside it is the same parallelism twice. It fail
 loudly rather than silently oversubscribing — `multiprocessing.Pool` workers are
 daemonic, so you get `AssertionError: daemonic processes are not allowed to have
 children`.
-
-### Examples
-
-Full training and prediction pipelines are in the `aluminium/`, `benzene/`,
-`molybdenium/`, and `2d_mos2/` directories.
 
 ## Containerized development
 
