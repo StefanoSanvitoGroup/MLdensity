@@ -57,8 +57,10 @@
       "Bash(podman run --rm -v ./:/MLdensity -w /MLdensity mldensity bash -lc ' *)",
       "Bash(podman run --rm -e OMP_NUM_THREADS=1 -v ./:/MLdensity -w /MLdensity mldensity bash -lc ' *)",
       "Bash(cd ~/src/github.com/stefanosanvitogroup && find MLdensity-dataset/jl_charge_density_model_data_set/aluminium -maxdepth 4 -iname 'CHGCAR*' 2>/dev/null | head; echo \"--- tree \\(depth 2\\) ---\"; find MLdensity-dataset/jl_charge_density_model_data_set/aluminium -maxdepth 2 -type d 2>/dev/null | head -40)",
-      "Read(//Users/wasmer/src/github.com/stefanosanvitogroup/**)",
-      "Bash(podman run *)"
+      "Bash(podman run *)",
+      "Bash(python -c \"import jlgridfingerprints.lib.jlcontraction as m; print\\('built:', m.__file__\\)\")",
+      "Bash(python -V)",
+      "Bash(pip list *)"
     ]
   }
 }
