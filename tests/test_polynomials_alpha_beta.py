@@ -26,16 +26,18 @@ from jlgridfingerprints.lib.polynomials import expand_jacobi  # noqa: E402
 # to the same point of the cosine map. Shared with repro_alpha_beta_truncation.py.
 R = np.linspace(0.05, 4.0, 64)
 
-# Aluminium example's radial-map settings, reused as a fixed harness for every
-# alpha/beta pair below -- this test is about expand_jacobi's type handling,
-# not about reproducing each example pipeline end-to-end.
-NMAX_1B = 15
+# A fixed harness for every alpha/beta pair below, taking rcut/rmin from the
+# aluminium example. Deliberately not a copy of either expand_jacobi call site --
+# create_2b_jl forces double_shifted=0 and create_3b_jl forces rmin=0.0 with
+# nmax_2b, so no single call path matches this combination. It does not need to:
+# expand_jacobi's alpha/beta type handling is independent of the radial map.
+NMAX = 15
 MAP = dict(rcut=4.08, rmin=-0.74, gamma=1.0, shifted=1, double_shifted=1)
 
 
 def _jacobi(alpha, beta):
     """``expand_jacobi`` at the fixed distances and map settings above."""
-    return expand_jacobi(R, NMAX_1B, alpha, beta, **MAP)
+    return expand_jacobi(R, NMAX, alpha, beta, **MAP)
 
 
 # Published (float) alpha/beta against the integers they used to truncate to,
