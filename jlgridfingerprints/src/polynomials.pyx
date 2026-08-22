@@ -155,12 +155,16 @@ cdef void calculate_jacobi(int nmax,double alpha,double beta,double [::1]x, doub
                 jac[deg,i] = s
 
         if double_shifted:
-            jacobi_eval_single(nmax, alpha, beta, 1, pj1)
+            # Anchor the second vanishing point at the interval's own upper end,
+            # x = +gamma, not at x = +1. The two coincide only at gamma = 1.
+            # pj1 and the gfac denominator are two halves of one anchor: gfac is
+            # the closed form of P1~(x)/P1~(x_up) = (x+gamma)/(x_up+gamma), so
+            # changing either alone gives a basis vanishing at neither endpoint.
+            jacobi_eval_single(nmax, alpha, beta, gamma, pj1)
 
             for i in range(ndist):
                 for deg in range(2,deg_max):
-                    # s = jac[deg,i] - ((pj1[deg]-pj0[deg])/(pj1[1]-pj0[1])) * jac[1,i]
-                    gfac = (gamma+x[i])/(gamma+1)
+                    gfac = (gamma+x[i])/(2.0*gamma)
                     p1x = pj1[deg]-pj0[deg]
                     s = jac[deg,i] - gfac * p1x
                     jac[deg,i] = s
