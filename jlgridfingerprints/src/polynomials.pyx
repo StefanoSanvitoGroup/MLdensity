@@ -10,7 +10,7 @@ cimport cython
 from jlgridfingerprints.lib.utils import vector_dot
 from libc.math cimport pi,cos,log1p
 
-def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double rcut, double rmin=0, double gamma=1, bint shifted=1, bint double_shifted=0, str radial_map='cosine', double rsoft=0.0):
+def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double rcut, double rmin=0, double gamma=1, bint shifted=1, bint double_shifted=0, bint slope_shifted=0, str radial_map='cosine', double rsoft=0.0):
     """Vanishing-Jacobi radial expansion of neighbour distances.
 
     See the JLCDM paper (DOI:10.1038/s41524-023-01053-0) for the definitions.
@@ -42,6 +42,13 @@ def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double r
     double_shifted : bool, optional
         Use the double-vanishing-Jacobi polynomials, whose orders start at 2
         instead of 1. Default False.
+    slope_shifted : bool, optional
+        Constrain the basis to vanish at ``rcut`` in value *and* first
+        derivative with respect to distance, rather than in value alone (see
+        Notes). Like ``double_shifted`` it consumes two orders and returns
+        orders 2..nmax, and it is mutually exclusive with it: the two impose
+        different conditions at different points. Requires ``shifted``, which
+        it extends rather than replaces, and ``nmax >= 2``. Default False.
     radial_map : str, optional
         Which coordinate carries distance to the Jacobi variable: ``'cosine'``
         or ``'log'`` (see Notes). Default ``'cosine'``.
@@ -55,14 +62,17 @@ def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double r
     -------
     numpy.ndarray
         Jacobi expansion of shape ``(n_orders, n_neighbours)``, where
-        ``n_orders`` is ``nmax`` (or ``nmax - 1`` when ``double_shifted``).
+        ``n_orders`` is ``nmax`` (or ``nmax - 1`` when ``double_shifted`` or
+        ``slope_shifted``, each of which consumes two orders).
 
     Raises
     ------
     ValueError
         If ``radial_map`` is not one of the two accepted names; if ``rsoft`` is
         set for ``'cosine'`` or unset for ``'log'``; if ``rmin`` is non-zero
-        for ``'log'``; or if any distance is negative under ``'log'``.
+        for ``'log'``; if any distance is negative under ``'log'``; or if
+        ``slope_shifted`` is combined with ``double_shifted``, set without
+        ``shifted``, or used with ``nmax < 2``.
 
     Notes
     -----
@@ -90,6 +100,25 @@ def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double r
     finite at ``r = 0``, where ``log r`` is not, and tunes the trade: large
     ``rsoft`` approaches a map linear in distance, small ``rsoft`` one linear in
     log distance.
+
+    That difference is what ``slope_shifted`` exists for. ``shifted`` makes the
+    basis vanish in value at ``rcut`` under either map, but a vanishing *radial
+    slope* there is a different condition: ``df/dr = (df/dx)(dx/dr)``, so it
+    holds for free wherever the map's own derivative vanishes at the cutoff.
+    The cosine map is stationary at both ends and supplies it silently for any
+    ``rmin``; the logarithmic map is strictly monotone and does not. A caller
+    who needs a basis that joins something else at ``rcut`` without a kink --
+    a model split at a radius, say -- therefore gets it for free under the
+    cosine map and must ask for it under the logarithmic one.
+
+    ``slope_shifted`` imposes both conditions at the single anchor ``x = -gamma``
+    by building ``(gamma + x)**2 * P_k^(alpha, beta+2)(x)`` for
+    ``k = 0..nmax-2``. Any polynomial with a double root at ``x = -gamma``
+    factors that way, so this spans the same space as subtracting orders 0 and 1
+    of the raw basis would, but it is far better behaved per function: the
+    subtractive form multiplies order 1 by a coefficient growing like ``n**2``,
+    which swamps the polynomial itself and distorts any penalty on the fitted
+    coefficients.
     """
 
     # gamma is the half-width of the interval the expansion lives on, so it has
@@ -117,6 +146,23 @@ def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double r
 
     cdef np.ndarray[dtype=double,ndim=2] pjacobi = np.empty((deg_max,ndist),dtype=np.double)
     cdef double[:,::1] vj = pjacobi
+
+    if slope_shifted:
+        if double_shifted:
+            raise ValueError(
+                "'slope_shifted' and 'double_shifted' are mutually exclusive: they impose "
+                "different conditions (value+slope at rcut, versus value at each end)."
+            )
+        if not shifted:
+            raise ValueError(
+                "'slope_shifted' requires 'shifted': the slope condition extends the value "
+                "condition rather than replacing it."
+            )
+        if nmax < 2:
+            raise ValueError(
+                "'slope_shifted' consumes two orders, so it requires nmax >= 2; "
+                f"got nmax={nmax}."
+            )
 
     if radial_map == 'cosine':
         map_code = 0
@@ -147,14 +193,14 @@ def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double r
                 raise ValueError("radial_map='log' requires non-negative distances.")
             cos_theta0[i] = gamma * (1.0 - 2.0 * log1p(dist[i] / rsoft) / log_norm)
 
-    calculate_jacobi(nmax, alpha, beta, cos_theta0, gamma, shifted, double_shifted, vj)
+    calculate_jacobi(nmax, alpha, beta, cos_theta0, gamma, shifted, double_shifted, slope_shifted, vj)
 
     for i in range(ndist):
         if dist[i] > rcut:
             for n in range(1,deg_max):
                 vj[n,i] = d
 
-    if double_shifted:
+    if double_shifted or slope_shifted:
         return pjacobi[2:,:]
     else:
         return pjacobi[1:,:]
@@ -211,7 +257,7 @@ def expand_legendre(int lmax, double[:,::1] hat_rgi, double[:,::1] hat_rgj, bint
 
     return plegendre
 
-cdef void calculate_jacobi(int nmax,double alpha,double beta,double [::1]x, double gamma, bint shifted, bint double_shifted, double[:,::1] jac):
+cdef void calculate_jacobi(int nmax,double alpha,double beta,double [::1]x, double gamma, bint shifted, bint double_shifted, bint slope_shifted, double[:,::1] jac):
 
     cdef int i = 0
     cdef int deg = 1
@@ -227,6 +273,39 @@ cdef void calculate_jacobi(int nmax,double alpha,double beta,double [::1]x, doub
     cdef double s = 0
     cdef double p1x = 0
     cdef double gfac = 0
+    cdef double w = 0
+
+    if slope_shifted:
+        # Value and first derivative both vanish at the anchor x = -gamma, built
+        # as (gamma+x)**2 * P_k^(alpha,beta+2) for k = 0..nmax-2. Every polynomial
+        # with a double root at -gamma factors that way, so this spans the same
+        # space as the subtractive form Phat_n = P_n - a_n - b_n*P_1, but without
+        # its conditioning problem: there b_n = P_n'(-gamma)/P_1' grows like n**2
+        # (-4.14 at n=2, -5282 at n=24) and b_n*P_1 swamps P_n itself. Plain least
+        # squares cannot tell the two apart; a coefficient penalty can, and this
+        # is the form whose penalty is not distorted by an n**2 factor.
+        #
+        # The k-th function lands in row k+2, so the caller's existing
+        # `return pjacobi[2:,:]` yields orders 2..nmax -- the same block width
+        # double_shifted returns. Rows are filled descending so that jac[deg-2]
+        # is still the raw value when it is read.
+        jacobi_eval(nmax-2, alpha, beta+2.0, x, jac)
+
+        for i in range(ndist):
+            w = gamma + x[i]
+            w = w * w
+            for deg in range(deg_max-1, 1, -1):
+                jac[deg,i] = w * jac[deg-2,i]
+
+        # Return before the `shifted` block below: `shifted` is subsumed here,
+        # not forgotten. The (gamma+x)**2 factor already makes every function
+        # vanish in value at x = -gamma, so subtracting P_n(-gamma) as well
+        # would subtract zero from a basis built to be zero there -- and would
+        # break it, since the subtraction is applied to jac rows that no longer
+        # hold raw P_n. `slope_shifted` still *requires* `shifted` so that the
+        # contradictory request (slope condition without value condition) is
+        # rejected rather than silently reinterpreted.
+        return
 
     jacobi_eval(nmax, alpha, beta, x, jac)
 

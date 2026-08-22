@@ -59,6 +59,7 @@ class JLGridFingerprints:
         periodic: bool = True,
         shifted: bool = True,
         double_shifted: bool = False,
+        slope_shifted: bool = False,
         radial_map: str = "cosine",
         rsoft: float = 0.0,
         nn_leaf_size: int = 2,
@@ -109,6 +110,16 @@ class JLGridFingerprints:
             edges of the interval). Applies to the 2B term, where it preserves
             continuity near the atoms and removes inter-body redundancy.
             Default ``False``.
+        slope_shifted : bool
+            Constrain the radial basis to vanish at ``rcut`` in value *and*
+            first derivative with respect to distance, rather than in value
+            alone, so that the descriptor joins whatever lies beyond the cutoff
+            without a kink. Applies to both body terms, unlike
+            ``double_shifted``, which the 1B term hard-codes off. Consumes two
+            orders per term, exactly as ``double_shifted`` does, and is mutually
+            exclusive with it. Needed only for ``radial_map="log"``: the cosine
+            map is stationary at ``rcut`` and supplies the slope condition for
+            free. Default ``False``.
         radial_map : str
             Which coordinate carries neighbour distance to the Jacobi variable,
             for both body terms: ``"cosine"`` (the map used by the published
@@ -224,6 +235,27 @@ class JLGridFingerprints:
                     f"alpha and beta must be > -1 (Jacobi weight domain); got {value}"
                 )
 
+        if slope_shifted:
+            if double_shifted:
+                raise ValueError(
+                    "'slope_shifted' and 'double_shifted' are mutually exclusive: they "
+                    "impose different conditions (value+slope at rcut, versus value at "
+                    "each end)."
+                )
+            if not shifted:
+                raise ValueError(
+                    "'slope_shifted' requires 'shifted': the slope condition extends the "
+                    "value condition rather than replacing it."
+                )
+            for value in (self._nmax_1b,) + (
+                (self._nmax_2b,) if self._do_3b_jl else ()
+            ):
+                if value < 2:
+                    raise ValueError(
+                        "'slope_shifted' consumes two orders, so it requires nmax >= 2 "
+                        f"for every body term; got nmax={value}."
+                    )
+
         if radial_map not in ("cosine", "log"):
             raise ValueError(
                 f"Unknown 'radial_map' {radial_map!r}: expected 'cosine' or 'log'."
@@ -248,6 +280,7 @@ class JLGridFingerprints:
         self._rmin = rmin
         self._shifted = shifted
         self._double_shifted = double_shifted
+        self._slope_shifted = slope_shifted
         self._radial_map = radial_map
         self._rsoft = rsoft
 
@@ -312,10 +345,11 @@ class JLGridFingerprints:
 
         n_features = 0
         if self._do_2b_jl:
-            n_features += self._n_species * (self._nmax_1b)
-            self._n_2b_features = self._n_species * (self._nmax_1b)
+            n_orders_1b = self._nmax_1b - 1 if self._slope_shifted else self._nmax_1b
+            n_features += self._n_species * n_orders_1b
+            self._n_2b_features = self._n_species * n_orders_1b
         if self._do_3b_jl:
-            if self._double_shifted:
+            if self._double_shifted or self._slope_shifted:
                 n_full_terms = (self._nmax_2b - 1) * (self._nmax_2b - 1)
                 n_upper_terms = (n_full_terms - (self._nmax_2b - 1)) // 2 + (
                     self._nmax_2b - 1
@@ -479,6 +513,7 @@ class JLGridFingerprints:
                     self._gamma,
                     shifted=int(self._shifted),
                     double_shifted=0,
+                    slope_shifted=int(self._slope_shifted),
                     radial_map=self._radial_map,
                     rsoft=self._rsoft,
                 )
@@ -548,6 +583,7 @@ class JLGridFingerprints:
                     self._gamma,
                     shifted=int(self._shifted),
                     double_shifted=int(self._double_shifted),
+                    slope_shifted=int(self._slope_shifted),
                     radial_map=self._radial_map,
                     rsoft=self._rsoft,
                 )
@@ -584,6 +620,7 @@ class JLGridFingerprints:
                         self._gamma,
                         shifted=int(self._shifted),
                         double_shifted=int(self._double_shifted),
+                        slope_shifted=int(self._slope_shifted),
                         radial_map=self._radial_map,
                         rsoft=self._rsoft,
                     )
