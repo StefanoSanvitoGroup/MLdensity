@@ -1,11 +1,13 @@
 # Changelog
 
-## [Unreleased] — branch `fix-double-shifted-anchor`
+## [0.1.6] - 2026-08-22 — branch `fix-double-shifted-anchor`
 
-No version bump proposed: `stable` is at 0.1.5 and PR #7 already claims 0.1.6, so
-`pyproject.toml` and `CITATION.cff` are deliberately untouched rather than reserve a number
-while that is in flight. The version is the maintainers' to assign at merge. Independent of
-PR #7 — different line, different mechanism, no interaction; either can land first.
+Anchors the `double_shifted` basis at its own interval end. Merged as `3abf58f`. The branch
+carried no version number on purpose — it and PR #7 were open at the same time, independent of
+each other, and either could have landed first — under the rule that *the PR merging first takes
+the next unused patch version*. This one merged first, so it takes 0.1.6 and PR #7 moves to
+0.1.7. The three version files are brought into agreement here rather than in the squashed
+merge, which took the branch verbatim.
 
 ### Bug fixes
 
