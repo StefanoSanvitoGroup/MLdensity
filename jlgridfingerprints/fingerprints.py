@@ -90,7 +90,8 @@ class JLGridFingerprints:
             the atoms. Default ``0.0``.
         gamma : float
             Scaling factor applied to the cosine-mapped radial variable in the
-            Jacobi expansion. Default ``1.0``.
+            Jacobi expansion, which runs over ``[-gamma, +gamma]``. Must be
+            strictly positive. Default ``1.0``.
         vector : bool
             If ``True`` (default), return descriptors as a concatenated 1-D
             vector; otherwise as a list of per-species / per-pair blocks.
@@ -121,6 +122,13 @@ class JLGridFingerprints:
         if rcut <= 0:
             raise ValueError("Only positive 'rcut' are allowed.")
         self._rcut = float(rcut)
+
+        # gamma is the half-width of the interval the radial expansion runs over,
+        # so gamma <= 0 is degenerate: it collapses that interval to a point or
+        # reverses it. Rejected at construction rather than deep inside the grid
+        # loop, where the Cython layer's cdivision would turn it into NaN.
+        if gamma <= 0:
+            raise ValueError("Only positive 'gamma' are allowed.")
 
         self._do_2b_jl = "1" in body.split("+")
         self._do_3b_jl = "2" in body.split("+")
