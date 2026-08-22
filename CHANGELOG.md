@@ -1,5 +1,57 @@
 # Changelog
 
+## [Unreleased] — branch `fix-double-shifted-anchor`
+
+No version bump proposed: `stable` is at 0.1.5 and PR #7 already claims 0.1.6, so
+`pyproject.toml` and `CITATION.cff` are deliberately untouched rather than reserve a number
+while that is in flight. The version is the maintainers' to assign at merge. Independent of
+PR #7 — different line, different mechanism, no interaction; either can land first.
+
+### Bug fixes
+
+- [x] `calculate_jacobi` (`polynomials.pyx`) anchored the *upper* vanishing point of the
+  `double_shifted` basis at a hard-coded `x = +1`, while the interval it works over is
+  $[-\gamma, +\gamma]$ and the *lower* anchor was already correctly parameterised as
+  `-1 * gamma`. The two ends were therefore anchored to two different intervals, and coincided
+  only at the default `gamma = 1`. Away from that default the option's defining property is not
+  merely weakened but inverted: at `gamma = 2` every returned order attains its *maximum*
+  magnitude exactly at the endpoint where it is documented to vanish. And because `x = +1` lies
+  inside the reachable range whenever `gamma > 1`, the vanishing point that belongs at the
+  interval end instead appeared as a hard node at an interior radius,
+  $r^\ast = r_{\min} + \frac{r_{\rm cut}-r_{\min}}{\pi}\arccos(1/\gamma)$ — so a caller
+  sweeping `gamma` with `double_shifted` on was not sweeping a smooth family of bases, but
+  moving a node inward from the cutoff. Fixed by anchoring both halves at `x = +gamma`: the
+  point `pj1` is evaluated at, and the `gfac` denominator, which is the closed form of the same
+  normalisation. Both must change together — changing either alone gives a basis vanishing at
+  neither end.
+
+  **Bit-identical for everything in this repository, measured.** Against a reference capture
+  taken before the change on the same host and compiler (`setup.py` passes `-march=native`, so
+  that matters): of 109 `expand_jacobi` arrays swept over exponent sets, `nmax`, `rmin`,
+  `gamma` and both shift flags, exactly the 24 combining `double_shifted` with `gamma != 1`
+  change; the other 84 are `np.array_equal`, including every `gamma = 1.0` array, every
+  non-`double_shifted` array, and a full 4×4×4 fcc-Al descriptor matrix. `gamma` is set in no
+  example settings dict, no `scripts/` entry and no test — `grep -rn gamma` over all four
+  example pipelines and `scripts/` returns nothing — so every published artifact runs at the
+  default where the two anchors agree. No published number, no example output and no existing
+  test expectation changes.
+
+  Fixed unconditionally, with no compatibility toggle: the prior behaviour has no defensible
+  interpretation at `gamma != 1` — it neither vanishes at the interval end nor is documented as
+  vanishing anywhere else — and a switch whose only purpose is to reproduce an internally
+  inconsistent basis would be a permanent cost for a path nobody should choose.
+
+### Tests
+
+- [x] `tests/test_polynomials_double_shifted.py` — endpoint vanishing across
+  `gamma` ∈ {0.5, 0.75, 1.0, 1.5, 2.0}, absence of the spurious interior node for `gamma > 1`,
+  and a frozen `array_equal` regression at `gamma = 1`. Uses integral `alpha`/`beta`
+  deliberately, since `expand_jacobi` still declares those exponents `int` (the subject of a
+  separate issue) and float values would be silently truncated, making the test exercise
+  different exponents than it names. **The module fails 6 of its 8 cases on unfixed code**; the
+  2 that pass either way are the `gamma = 1` cases, which is the bit-identity claim expressed
+  as a test.
+
 ## [0.1.5] - 2026-08-09 — branch `fast-fingerprints`
 
 Moves parallelism to the right loop. `JLGridFingerprints.create()` gains an
