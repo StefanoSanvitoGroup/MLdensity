@@ -1,5 +1,104 @@
 # Changelog
 
+## [Unreleased] — branch `feat-radial-map`
+
+**Experiment, not an upstream proposal.** Stacked on `fix-alpha-beta-truncation` (unmerged,
+PR #7). No issue filed and no PR opened — this branch exists to unblock a downstream
+(`vimp-prediction`) trial balloon before it is known whether the balloon flies. No version
+bump: the next unused number is `0.1.9` (0.1.6 = PR #9's anchor fix, 0.1.7 = PR #10's `gamma`
+guard, 0.1.8 = PR #7), and claiming it would reserve a number the maintainers may want for
+something else, for work that may never be proposed.
+
+**Pushed to `origin` as of 2026-08-22, deliberately** — this branch is no longer local-only.
+It is pushed so cluster runs of `vimp-prediction` can fetch the pinned commit directly
+instead of rsyncing a working copy from a laptop. Pushing a branch is not proposing it: no
+issue, no PR, no version claimed, and `stable` is untouched. If the balloon does not fly, the
+branch is deleted from `origin` and nothing was spent upstream.
+
+**Restacked twice on 2026-08-22**, as the branches below it merged. The anchor fix that used
+to be this branch's third change landed upstream on its own as 0.1.6 (issue #8, PR #9), so
+the first rebase dropped that commit as already applied and its entry moved to the 0.1.6
+section below; the second followed PR #10 and PR #7's renumbering. What remains here is the
+radial map and `slope_shifted` — both reachable only by passing a new keyword. The
+Measurements below were re-taken against each new base on the same host rather than carried
+over: the reference capture, the four example descriptor matrices and all 46 acceptance
+criteria were re-run each time, and the bit-identity result came out stronger after the first
+restack than before it (see Measurements).
+
+### Features
+
+- [x] `radial_map` selector on `expand_jacobi` and `JLGridFingerprints`, default `'cosine'`
+  (bit-identical to the prior behavior — see Measurements), and a new `'log'` map,
+  $x(r) = \gamma\,(1 - 2\ln(1+r/r_{\rm soft}) / \ln(1+r_{\rm cut}/r_{\rm soft}))$. Where the
+  cosine map gives the near-nuclear region under one part in four hundred of the basis's
+  dynamic range at every corner of the searched `rcut`/`rmin` box, the logarithmic map
+  concentrates resolution there instead, governed by a new `rsoft` parameter (the softening
+  length below which the map is linear in distance rather than logarithmic, keeping it
+  finite at $r=0$). Motivated by a near-nuclear cusp in an all-electron potential that a full
+  hyperparameter search over the existing cosine-map descriptor could not fit.
+- [x] `slope_shifted` on both call sites, an additive keyword alongside `shifted` /
+  `double_shifted`: constrains the radial basis to vanish at `rcut` in value *and* first
+  derivative, rather than value alone. Needed because the cosine map supplies the derivative
+  condition for free ($dx/dr \propto \sin\theta \to 0$ at `rcut`) while the logarithmic map,
+  being strictly monotone, does not — so a basis merely `shifted` under the new map leaves a
+  real kink at the seam (measured $39.7\,\text{Å}^{-1}$, flat under grid refinement, i.e. a
+  genuine nonzero slope, not numerical noise). Built as
+  $(\gamma+x)^2\,P_k^{(\alpha,\beta+2)}(x)$ rather than the algebraically equivalent
+  subtractive form $\hat P_n = P_n - a_n - b_n P_1$: both span the same space (confirmed by
+  rank), but $b_n$ grows like $n^2$ (from $-4.14$ at $n=2$ to $-5282$ at $n=24$) and swamps
+  $P_n$ under any coefficient penalty. Consumes two orders, exactly as `double_shifted` does;
+  mutually exclusive with it, and reaches the 1B call site that `double_shifted` does not.
+
+### Measurements
+
+Performed in the local podman dev container (`mldensity-dev`), same host for every
+comparison — `setup.py` passes `-march=native`, so a comparison is only a comparison of two
+code versions on one host. 46 acceptance criteria checked in one pass
+(`reports/2026-08-19-radial-map/verify_all.py`, untracked); full table in
+`reports/2026-08-19-radial-map/verify_all.out`.
+
+- [x] **Bitwise neutral wherever no new keyword is passed, verified against a reference
+  capture taken on the branch's own base.** All 109 swept arrays (`expand_jacobi` over
+  exponent sets, `nmax`, `rmin`, `gamma`, and both shift flags, plus a full fcc-Al descriptor
+  matrix) are `np.array_equal` — nothing changes at all. Re-measured on 2026-08-22 after the
+  restack, and the result is stronger than before it: the pre-restack capture had exactly 24
+  arrays differing, the ones combining `double_shifted` with $\gamma \neq 1$, because the
+  anchor fix was then part of this branch. With that fix upstream in 0.1.6 and its commit
+  dropped by the rebase, the changed set is empty, which is the claim this branch actually
+  wants to make — every remaining change is reachable only by passing `radial_map`, `rsoft`
+  or `slope_shifted`, and the reference sweep passes none of them. Criterion 1 of the
+  verification harness was updated to expect the empty set rather than the 24; the
+  pre-restack capture is kept alongside as `reference_prerestack.npz`. Re-captured again
+  after the second restack, whose base added PR #10's `gamma <= 0` guard: the sweep runs at
+  `gamma` ∈ {0.5, 1.0, 2.0}, all positive, so the guard is never reached and the empty
+  changed set holds unchanged.
+- [x] **The four example pipelines are unaffected**, checked more strongly than a stdout
+  diff: their real settings dicts, run on their real tracked structures, produce
+  bit-identical descriptor matrices and unchanged feature counts (`2d_mos2` 2346,
+  `aluminium` 120, `benzene` 1572, `molybdenium` 812) against the base commit. (Their printed
+  wall-clock timings were not compared — they do not reproduce run to run — and the
+  pipelines cannot in any case run end-to-end from this checkout, since the `CHGCAR` files
+  they read are not tracked.) Re-captured against the post-restack base on 2026-08-22, so the
+  comparison is against the base this branch now sits on rather than the one it was written
+  against; the pre-restack capture is kept as `examples_prerestack.npz`.
+- [x] **The new behavior is real, not nominal.** The logarithmic map's endpoints land at
+  $x=\pm\gamma$ to 15 digits and are strictly decreasing; its `rsoft`$\to\infty$ limit
+  converges to a linear map (max deviation $2\times10^{-1} \to 5\times10^{-7}$ over three
+  decades of `rsoft`); all five documented rejections (non-positive `rsoft`, `rsoft` set
+  under `'cosine'`, nonzero `rmin` under `'log'`, an unknown map name, a negative distance)
+  raise. `slope_shifted`'s vanishing point is a genuine double root — $|f|$ falls
+  $100\times$ per decade of approach to `rcut`, against $10\times$ for `shifted` alone (a
+  single root) — and its basis spans the same space as the algebraically-equivalent
+  subtractive construction, confirmed by matching full rank on a sampling grid dense enough
+  to resolve the logarithmic map's high orders (a coarser grid understated the rank of both
+  constructions identically, which would have been a false pass).
+- [x] `pytest` (59 tests) and `ruff check` / `ruff format --check` pass unmodified. The count
+  rose from 48 across the two restacks without any test being added here: the base now carries
+  the anchor fix's test module (8 cases) and PR #10's `gamma` guard cases (3), which this
+  branch inherits instead of supplying.
+
+
+
 ## [0.1.8] - 2026-08-22 — branch `fix-alpha-beta-truncation`
 
 Widens `expand_jacobi`'s alpha/beta exponents from `int` to `double`, fixing a silent
