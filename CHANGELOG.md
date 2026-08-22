@@ -1,10 +1,13 @@
 # Changelog
 
-## [Unreleased] — branch `fix-gamma-guard`
+## [0.1.7] - 2026-08-22 — branch `fix-gamma-guard`
 
-Follow-up to the review on PR #9. No version number claimed: PR #7 is still open and takes
-0.1.7 under the merge-order rule from issue #8, so this waits rather than reserve 0.1.8 for
-work that may land in either order.
+Follow-up to the review on PR #9, merged as `57db1b6`. Takes 0.1.7 by the merge-order rule
+from issue #8 — *the PR merging first takes the next unused patch version* — which this PR
+reached before PR #7. PR #7 had pre-claimed 0.1.7 in its branch while open; it moves to
+0.1.8, since the rule is decided by merge order rather than by which branch wrote a number
+down first. Applying it the other way would have left `stable` numbered non-monotonically,
+with 0.1.7 appearing only after 0.1.8.
 
 ### Bug fixes
 
