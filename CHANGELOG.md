@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased] — branch `fix-gamma-guard`
+
+Follow-up to the review on PR #9. No version number claimed: PR #7 is still open and takes
+0.1.7 under the merge-order rule from issue #8, so this waits rather than reserve 0.1.8 for
+work that may land in either order.
+
+### Bug fixes
+
+- [x] `expand_jacobi` (`polynomials.pyx`) and `JLGridFingerprints.__init__` now reject
+  `gamma <= 0` with a `ValueError`, matching the existing treatment of `rcut <= 0`. `gamma`
+  is the half-width of the interval $[-\gamma, +\gamma]$ the radial expansion runs over, so
+  `gamma = 0` collapses that interval to the single point $x = 0$ and `gamma < 0` reverses its
+  orientation; neither is a usable expansion. The `gamma = 0` case was the reason to add the
+  check rather than document the constraint: the `double_shifted` normalisation divides by
+  `2 * gamma`, and because the module compiles with `cdivision=True`, that division does not
+  raise — **every returned order came back as a silent NaN**, measured. Before the 0.1.6 anchor
+  fix the same call returned zeros, so 0.1.6 introduced the NaN path; this closes it. Raised at
+  construction in the Python layer as well, so a bad setting fails before the grid loop rather
+  than inside it.
+
+  Behaviour change for a caller who passes `gamma <= 0`, which previously returned NaN (with
+  `double_shifted`) or an all-zero basis (without). Nothing in this repository does — `gamma`
+  appears in no example settings dict, no `scripts/` entry and no other test.
+
+### Tests
+
+- [x] `tests/test_polynomials_double_shifted.py` — three parametrized cases
+  (`gamma` ∈ {0.0, −1.0, −0.5}) asserting the `ValueError`, each checked with `double_shifted`
+  both on and off, since the guard is a property of `gamma` itself rather than of either shift
+  mode.
+
+- [x] The module docstring no longer asserts that `expand_jacobi` declares its exponents
+  `int` — a claim that goes stale the moment PR #7 lands. It now states the intent instead:
+  integral `alpha`/`beta` keep the test independent of how non-integer exponents are handled,
+  which is true in either merge order.
+
 ## [0.1.6] - 2026-08-22 — branch `fix-double-shifted-anchor`
 
 Anchors the `double_shifted` basis at its own interval end. Merged as `3abf58f`. The branch

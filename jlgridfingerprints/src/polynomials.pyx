@@ -30,7 +30,9 @@ def expand_jacobi(double[::1] rgi, int nmax, int alpha, int beta, double rcut, d
     rmin : float, optional
         Lower edge of the cosine map. Default 0.
     gamma : float, optional
-        Scaling factor applied to the cosine-mapped variable. Default 1.
+        Scaling factor applied to the cosine-mapped variable, i.e. the half-width
+        of the interval ``[-gamma, +gamma]`` the expansion runs over. Must be
+        strictly positive. Default 1.
     shifted : bool, optional
         Use the vanishing-Jacobi polynomials. Default True.
     double_shifted : bool, optional
@@ -43,6 +45,15 @@ def expand_jacobi(double[::1] rgi, int nmax, int alpha, int beta, double rcut, d
         Jacobi expansion of shape ``(n_orders, n_neighbours)``, where
         ``n_orders`` is ``nmax`` (or ``nmax - 1`` when ``double_shifted``).
     """
+
+    # gamma is the half-width of the interval the expansion lives on, so it has
+    # to be strictly positive: gamma = 0 collapses [-gamma, +gamma] to the single
+    # point 0, and gamma < 0 reverses the interval and breaks the map's
+    # orientation. Checked here rather than left to the arithmetic because
+    # cdivision=True means the double_shifted normalisation divides by 2*gamma
+    # without raising -- at gamma = 0 every returned order would be a silent NaN.
+    if gamma <= 0:
+        raise ValueError("Only positive 'gamma' are allowed.")
 
     cdef int ndist = rgi.shape[0]
     cdef double[::1] dist = rgi

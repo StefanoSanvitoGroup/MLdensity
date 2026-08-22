@@ -6,9 +6,9 @@ interval is ``[-gamma, +gamma]``, so both anchors have to follow ``gamma``. Thes
 tests pin that at values of ``gamma`` away from the default, which is where the two
 anchors stop coinciding and where the property used to be lost.
 
-Integer ``alpha``/``beta`` throughout, deliberately: ``expand_jacobi`` still declares
-those exponents as ``int``, so float values would be truncated toward zero and a test
-written with them would not be exercising the exponents it names.
+Integer ``alpha``/``beta`` throughout, deliberately: the property under test is about
+``gamma`` alone, and integral exponents mean the test does not depend on how non-integer
+exponents are handled. It therefore exercises the same exponents either way.
 """
 
 import numpy as np
@@ -72,3 +72,29 @@ def test_double_shifted_unchanged_at_unit_gamma():
         ]
     )
     assert np.array_equal(basis, expected)
+
+
+@pytest.mark.parametrize("gamma", (0.0, -1.0, -0.5))
+def test_expand_jacobi_rejects_non_positive_gamma(gamma):
+    """``gamma <= 0`` leaves no interval to anchor to, and must not pass silently.
+
+    ``gamma = 0`` collapses ``[-gamma, +gamma]`` to the single point 0 and ``gamma < 0``
+    reverses it. Neither is a usable expansion, and ``gamma = 0`` is actively dangerous
+    with ``double_shifted``: the normalisation divides by ``2 * gamma``, which under
+    ``cdivision=True`` yields NaN for every returned order rather than raising. Checked
+    for both shift settings, since the guard is a property of ``gamma`` itself.
+    """
+    r = np.ascontiguousarray([0.0, RCUT])
+    for double_shifted in (0, 1):
+        with pytest.raises(ValueError, match="gamma"):
+            expand_jacobi(
+                r,
+                NMAX,
+                ALPHA,
+                BETA,
+                RCUT,
+                0.0,
+                gamma,
+                shifted=1,
+                double_shifted=double_shifted,
+            )
