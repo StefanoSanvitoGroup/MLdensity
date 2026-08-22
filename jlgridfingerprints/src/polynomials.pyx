@@ -8,9 +8,9 @@ cimport numpy as np
 cimport cython
 
 from jlgridfingerprints.lib.utils import vector_dot
-from libc.math cimport pi,cos
+from libc.math cimport pi,cos,log1p
 
-def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double rcut, double rmin=0, double gamma=1, bint shifted=1, bint double_shifted=0):
+def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double rcut, double rmin=0, double gamma=1, bint shifted=1, bint double_shifted=0, str radial_map='cosine', double rsoft=0.0):
     """Vanishing-Jacobi radial expansion of neighbour distances.
 
     See the JLCDM paper (DOI:10.1038/s41524-023-01053-0) for the definitions.
@@ -26,24 +26,70 @@ def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double r
         ``alpha > -1`` and ``beta > -1``. Not validated here: this function
         runs once per grid center, so the domain check belongs to the caller.
     rcut : float
-        Cutoff radius used in the cosine map.
+        Cutoff radius. Every radial map sends ``rcut`` to ``x = -gamma``, and
+        orders ``>= 1`` are zeroed beyond it.
     rmin : float, optional
-        Lower edge of the cosine map. Default 0.
+        Lower edge of the cosine map, i.e. the distance sent to ``x = +gamma``.
+        Negative values push that map's point of vanishing derivative to
+        inaccessible negative distances. Must be 0 for ``radial_map='log'``,
+        which has no such point; use ``rsoft`` there instead. Default 0.
     gamma : float, optional
-        Scaling factor applied to the cosine-mapped variable, i.e. the half-width
-        of the interval ``[-gamma, +gamma]`` the expansion runs over. Must be
+        Scaling factor applied to the mapped variable, i.e. the half-width of
+        the interval ``[-gamma, +gamma]`` the expansion runs over. Must be
         strictly positive. Default 1.
     shifted : bool, optional
         Use the vanishing-Jacobi polynomials. Default True.
     double_shifted : bool, optional
         Use the double-vanishing-Jacobi polynomials, whose orders start at 2
         instead of 1. Default False.
+    radial_map : str, optional
+        Which coordinate carries distance to the Jacobi variable: ``'cosine'``
+        or ``'log'`` (see Notes). Default ``'cosine'``.
+    rsoft : float, optional
+        Softening length, in the units of ``rcut``: the radius below which
+        ``radial_map='log'`` is linear in distance rather than logarithmic.
+        Required (``> 0``) for that map and rejected for ``'cosine'``.
+        Default 0.0, which means "unset".
 
     Returns
     -------
     numpy.ndarray
         Jacobi expansion of shape ``(n_orders, n_neighbours)``, where
         ``n_orders`` is ``nmax`` (or ``nmax - 1`` when ``double_shifted``).
+
+    Raises
+    ------
+    ValueError
+        If ``radial_map`` is not one of the two accepted names; if ``rsoft`` is
+        set for ``'cosine'`` or unset for ``'log'``; if ``rmin`` is non-zero
+        for ``'log'``; or if any distance is negative under ``'log'``.
+
+    Notes
+    -----
+    Both maps satisfy one contract, which is all that anything downstream of
+    the map depends on, and which a future third map must also satisfy:
+
+        A radial map carries a distance on ``[0, rcut]`` to ``x`` on
+        ``[-gamma, +gamma]``, monotonically *decreasing*, with
+        ``x(rmin) = +gamma`` and ``x(rcut) = -gamma``.
+
+    The orientation is the load-bearing half: ``x`` decreases as the distance
+    grows, which is why ``shifted`` subtracting ``P_n(-gamma)`` is what makes
+    the basis vanish at the cutoff, under either map and with no map-specific
+    code of its own. The two maps are::
+
+        cosine:  x(r) = gamma * cos(pi * (r - rmin) / (rcut - rmin))
+        log:     x(r) = gamma * (1 - 2 * log1p(r / rsoft) / log1p(rcut / rsoft))
+
+    They differ in where they spend their range. The cosine map concentrates it
+    in the middle of the interval and is stationary at both ends, so a region
+    close to ``rmin`` receives almost none of it -- fine for a field that varies
+    in the interstitial region, useless for one with structure at the nucleus.
+    The logarithmic map gives equal ratios of distance equal stretches of ``x``,
+    so the near-origin region receives a large share. ``rsoft`` is what keeps it
+    finite at ``r = 0``, where ``log r`` is not, and tunes the trade: large
+    ``rsoft`` approaches a map linear in distance, small ``rsoft`` one linear in
+    log distance.
     """
 
     # gamma is the half-width of the interval the expansion lives on, so it has
@@ -63,6 +109,8 @@ def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double r
     cdef int n = 0
     cdef double d = 0
     cdef double theta0 = 0
+    cdef int map_code = 0
+    cdef double log_norm = 0.0
 
     cdef np.ndarray[dtype=double,ndim=1] cos_theta = np.empty(ndist,dtype=np.double)
     cdef double[::1] cos_theta0 = cos_theta
@@ -70,10 +118,35 @@ def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double r
     cdef np.ndarray[dtype=double,ndim=2] pjacobi = np.empty((deg_max,ndist),dtype=np.double)
     cdef double[:,::1] vj = pjacobi
 
-    for i in range(ndist):
-        theta0 = pi * (dist[i] - rmin) / (rcut - rmin)
-        cos_theta0[i] = gamma * cos(theta0)
-    
+    if radial_map == 'cosine':
+        map_code = 0
+        if rsoft != 0.0:
+            raise ValueError("'rsoft' has no meaning for radial_map='cosine'; leave it unset.")
+    elif radial_map == 'log':
+        map_code = 1
+        if rsoft <= 0.0:
+            raise ValueError("radial_map='log' requires a positive 'rsoft' (the softening length).")
+        if rmin != 0.0:
+            raise ValueError("radial_map='log' requires rmin == 0; use 'rsoft' to set the near-core resolution.")
+        log_norm = log1p(rcut / rsoft)
+    else:
+        raise ValueError(f"Unknown 'radial_map' {radial_map!r}: expected 'cosine' or 'log'.")
+
+    if map_code == 0:
+        for i in range(ndist):
+            theta0 = pi * (dist[i] - rmin) / (rcut - rmin)
+            cos_theta0[i] = gamma * cos(theta0)
+    else:
+        for i in range(ndist):
+            # Negative distances are undefined under this map and would fail
+            # silently: between -rsoft and 0 they land outside [-gamma, +gamma],
+            # where the Jacobi polynomials are no longer orthogonal under their
+            # own weight and grow fast; at or below -rsoft they are -inf or NaN,
+            # which cdivision=True will not catch either.
+            if dist[i] < 0.0:
+                raise ValueError("radial_map='log' requires non-negative distances.")
+            cos_theta0[i] = gamma * (1.0 - 2.0 * log1p(dist[i] / rsoft) / log_norm)
+
     calculate_jacobi(nmax, alpha, beta, cos_theta0, gamma, shifted, double_shifted, vj)
 
     for i in range(ndist):
