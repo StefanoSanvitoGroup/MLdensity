@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.1.8] - 2026-08-22 — branch `fix-alpha-beta-truncation`
+
+Widens `expand_jacobi`'s alpha/beta exponents from `int` to `double`, fixing a silent
+truncation-toward-zero that affected five of the eight parameter sets published across this
+repo and its ecosystem. Filed as issue #6 before landing, per the project's rule that numerical
+behavior changes only with the Sanvito group's review.
+
+Numbered 0.1.8, not the 0.1.6 this branch originally claimed. Two PRs opened after it merged
+before it, and each took the next unused patch version under the rule agreed in issue #8 —
+*the PR merging first takes the next unused patch version*: PR #9 (the `double_shifted`
+anchor fix) took 0.1.6, and PR #10 (the `gamma` guard) took 0.1.7. The rule keys on merge
+order rather than on which branch wrote a number down first, so this branch renumbered twice
+while under review. Nothing about the fix itself changed either time.
+
+### Bug fixes
+
+- [x] `expand_jacobi` (`polynomials.pyx`) declared its Jacobi weight exponents alpha/beta as `int`, while every worker beneath it (`calculate_jacobi`, `jacobi_eval_single`, `jacobi_eval`) already took `double`. Cython's int coercion truncated a non-integer argument toward zero instead of raising — no exception, no warning — so a fitted float exponent silently became the integer it truncated to (e.g. `7.875386069413652` evaluated as `7`). Widening the one signature to `double` is the whole fix; nothing downstream changes, and `fingerprints.py`'s docstring has always promised `list of float`.
+
+### Behavior notes
+
+- [x] `JLGridFingerprints.__init__` now raises `ValueError` for any alpha or beta component `<= -1`, naming the offending value. The Jacobi weight `(1-x)^alpha (1+x)^beta` is only defined for `alpha, beta > -1`; outside that domain the three-term recurrence's divisor can vanish, and `# cython: cdivision=True` turns that into a silent `inf`/`NaN` far downstream rather than a clear error at construction time. Truncation had been accidentally protecting this — every alpha/beta in `(-1, 0)` used to collapse to `0` — and widening the type removed that accident.
+- [x] `aluminium`, `2d_mos2` and `molybdenium` example pipelines (`create_data.py`, `predict_chgcar.py`, `plot_diff_map.py`, `plot_diff_line_twinx.py`) and the README quickstart now state alpha/beta as the integers that were actually in force (e.g. aluminium's `[7.875386069413652, 5.875090883472657]` → `[7, 5]`), so a fixed library still reproduces the historical basis without relying on the old truncation to get there. `benzene` is untouched — its settings were already integral. Numerically a no-op given the type widening above; kept as its own commit so the Sanvito group can ask for it to be dropped without touching the fix.
+
+### Measurements
+
+Performed on FZJ PGI cluster iffSLURM, partition `th1-2020-32`, node `iffcluster1909`, AMD EPYC 7452, one job/one node for all three legs, example `aluminium` only.
+
+- [x] **Byte-identical wherever settings were already integral, verified by hash.** With `aluminium`'s example settings rewritten as the integers in force, the fixed library's fitted train/test metrics table hashes identically (sha256) against `stable`'s. That is what distinguishes a pure type widening from a change to the recurrence itself, and it is what lets every historical model stay reconstructible from a fixed library.
+- [x] **Honouring the published floats changes fitted accuracy by well under 0.1%.** On `aluminium`, test RMSE moves −0.06% and test MAE +0.01% relative to `stable` — opposite signs, both roughly three orders of magnitude inside the ±10% guard set before measuring. The published alpha/beta were selected while the search was scoring the truncated basis, so some change was expected; the reason it is this small is that 15+6 Jacobi orders span nearly the same function space regardless of the exact alpha/beta tilt, so a least-squares fit recovers almost the same result from re-tilted ingredients. Full write-up in `reports/2026-08-19-alpha-beta-truncation/delta-report.md` (untracked, per the `reports/` gitignore convention).
+
 ## [0.1.7] - 2026-08-22 — branch `fix-gamma-guard`
 
 Follow-up to the review on PR #9, merged as `57db1b6`. Takes 0.1.7 by the merge-order rule
