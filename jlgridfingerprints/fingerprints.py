@@ -59,6 +59,8 @@ class JLGridFingerprints:
         periodic: bool = True,
         shifted: bool = True,
         double_shifted: bool = False,
+        radial_map: str = "cosine",
+        rsoft: float = 0.0,
         nn_leaf_size: int = 2,
     ):
         """Configure the descriptor and precompute the feature layout.
@@ -87,11 +89,12 @@ class JLGridFingerprints:
             term only (the 2B term always uses ``rmin = 0``). May be negative
             to push the point of vanishing derivative to inaccessible negative
             distances, letting the model fit steep density variations close to
-            the atoms. Default ``0.0``.
+            the atoms. Must be ``0.0`` when ``radial_map="log"``, which has no
+            such point; use ``rsoft`` there instead. Default ``0.0``.
         gamma : float
-            Scaling factor applied to the cosine-mapped radial variable in the
-            Jacobi expansion, which runs over ``[-gamma, +gamma]``. Must be
-            strictly positive. Default ``1.0``.
+            Scaling factor applied to the mapped radial variable in the Jacobi
+            expansion, which runs over ``[-gamma, +gamma]``. Must be strictly
+            positive. Default ``1.0``.
         vector : bool
             If ``True`` (default), return descriptors as a concatenated 1-D
             vector; otherwise as a list of per-species / per-pair blocks.
@@ -106,6 +109,20 @@ class JLGridFingerprints:
             edges of the interval). Applies to the 2B term, where it preserves
             continuity near the atoms and removes inter-body redundancy.
             Default ``False``.
+        radial_map : str
+            Which coordinate carries neighbour distance to the Jacobi variable,
+            for both body terms: ``"cosine"`` (the map used by the published
+            models) or ``"log"``. The logarithmic map concentrates the basis's
+            resolution near the origin instead of near the middle of the cutoff
+            interval, which matters for fields with structure at the nucleus.
+            See ``expand_jacobi`` for the contract both maps satisfy. Default
+            ``"cosine"``.
+        rsoft : float
+            Softening length in Angstrom: the radius below which
+            ``radial_map="log"`` is linear in distance rather than logarithmic,
+            which is what keeps it finite at ``r = 0``. Required (``> 0``) for
+            that map and rejected for ``"cosine"``. Default ``0.0``, meaning
+            unset.
         nn_leaf_size : int
             Leaf size of the KD-tree used for the neighbour search. Default
             ``2``.
@@ -207,11 +224,32 @@ class JLGridFingerprints:
                     f"alpha and beta must be > -1 (Jacobi weight domain); got {value}"
                 )
 
+        if radial_map not in ("cosine", "log"):
+            raise ValueError(
+                f"Unknown 'radial_map' {radial_map!r}: expected 'cosine' or 'log'."
+            )
+        if radial_map == "cosine" and rsoft != 0.0:
+            raise ValueError(
+                "'rsoft' has no meaning for radial_map='cosine'; leave it unset."
+            )
+        if radial_map == "log":
+            if rsoft <= 0.0:
+                raise ValueError(
+                    "radial_map='log' requires a positive 'rsoft' (the softening length)."
+                )
+            if rmin != 0.0:
+                raise ValueError(
+                    "radial_map='log' requires rmin == 0; use 'rsoft' to set the "
+                    "near-core resolution."
+                )
+
         self._lmax = lmax
         self._gamma = gamma
         self._rmin = rmin
         self._shifted = shifted
         self._double_shifted = double_shifted
+        self._radial_map = radial_map
+        self._rsoft = rsoft
 
         self._nn_leaf_size = nn_leaf_size
 
@@ -441,6 +479,8 @@ class JLGridFingerprints:
                     self._gamma,
                     shifted=int(self._shifted),
                     double_shifted=0,
+                    radial_map=self._radial_map,
+                    rsoft=self._rsoft,
                 )
 
                 coeff_2b_matrix.append(calculate_2b(jacobi_ni).copy())
@@ -508,6 +548,8 @@ class JLGridFingerprints:
                     self._gamma,
                     shifted=int(self._shifted),
                     double_shifted=int(self._double_shifted),
+                    radial_map=self._radial_map,
+                    rsoft=self._rsoft,
                 )
 
                 if ispec == jspec:
@@ -542,6 +584,8 @@ class JLGridFingerprints:
                         self._gamma,
                         shifted=int(self._shifted),
                         double_shifted=int(self._double_shifted),
+                        radial_map=self._radial_map,
+                        rsoft=self._rsoft,
                     )
                     legendre_lij = expand_legendre(
                         self._lmax, vector_centers_i, vector_centers_j, zero_diag=0
