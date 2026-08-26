@@ -204,3 +204,6 @@ cython_debug/
 ############################################################
 # Python gitignore template FINISH
 ############################################################
+
+# Claude Code local settings (per-machine, not project config)
+.claude/
