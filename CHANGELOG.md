@@ -53,9 +53,12 @@ restack than before it (see Measurements).
 
 Performed in the local podman dev container (`mldensity-dev`), same host for every
 comparison — `setup.py` passes `-march=native`, so a comparison is only a comparison of two
-code versions on one host. 46 acceptance criteria checked in one pass
-(`reports/2026-08-19-radial-map/verify_all.py`, untracked); full table in
-`reports/2026-08-19-radial-map/verify_all.out`.
+code versions on one host. **46 of 46 acceptance criteria pass.** The harness and its raw
+output are local development artifacts and are deliberately not published: this branch has no
+issue and no pull request, so there is nowhere public that holds them, and citing a path would
+point at a directory no other checkout has. Every number this section rests on is therefore
+stated inline below rather than delegated to a link. Anyone reproducing it needs the branch,
+the container and one command; ask the branch author for the harness.
 
 - [x] **Bitwise neutral wherever no new keyword is passed, verified against a reference
   capture taken on the branch's own base.** All 109 swept arrays (`expand_jacobi` over
