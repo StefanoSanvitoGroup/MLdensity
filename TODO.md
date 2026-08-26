@@ -6,7 +6,7 @@ Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), by version.
 
 - [ ] LICENSE + pyproject `license` field (pending Sanvito group's choice — can land last).
 - [ ] Zenodo release→DOI: enable GitHub–Zenodo integration, cut a release (post-merge).
-- [ ] Follow-up (found while adding docstrings): `expand_jacobi` in `src/polynomials.pyx` declares `int alpha, int beta`, but the example pipelines pass floats (e.g. `7.875`) and the internal `calculate_jacobi` uses `double` — likely α/β truncation bug. Numerical behavior → verify with the Sanvito group before any fix.
+- [x] Follow-up (found while adding docstrings): `expand_jacobi` in `src/polynomials.pyx` declared `int alpha, int beta`, but the example pipelines pass floats (e.g. `7.875`) and the internal `calculate_jacobi` uses `double` — the signature silently truncated α/β toward zero. Filed as issue #6 and fixed on branch `fix-alpha-beta-truncation`, see CHANGELOG (v0.1.8).
 - [ ] Follow-up (Copilot review of PR #2): `sample_charge` in `tools.py` normalises with `prob_chg /= sum(prob_chg)`. If all Gaussian weights underflow to 0 (many near-zero `chg` voxels), this divides by zero → NaN probabilities → `rng.choice(p=...)` fails. Copilot suggests falling back to uniform probabilities when the normalisation is not finite/positive. That changes sampling behavior → verify with the Sanvito group before any fix.
 
 ## Integrate the `fast-predictor` module — DONE (branch `fast-predictor`, see CHANGELOG)
