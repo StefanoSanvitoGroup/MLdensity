@@ -4,8 +4,8 @@
 int beta`` while every worker beneath it took ``double``. Cython's int coercion
 truncates a non-integer argument toward zero instead of raising, so a fitted
 float exponent silently became the integer it truncated to. Widening the
-signature to ``double`` fixed that; see
-``reports/2026-08-19-alpha-beta-truncation/`` for the full write-up.
+signature to ``double`` fixed that; see issue #6 and PR #7 for the
+full write-up.
 
 These tests were first landed as a characterization of the defective behaviour
 and then inverted in the commit that widened the signature, so the numerical
