@@ -15,8 +15,8 @@
 # and fall back to the least-occupied queue if nothing is idle. `viti` was fully
 # idle (6 nodes x 20 cores, 128 GB, empty queue) when this was first run, while
 # th1-2020-64 had 59 jobs waiting and no fully-free node. Absolute wall times are
-# therefore NOT comparable to reports/predictor-comparison (th1-2020-64); only
-# the shape of the scaling curve is.
+# therefore NOT comparable to the v0.1.3 fast_predictor benchmark, which ran on
+# th1-2020-64; only the shape of the scaling curve is.
 #
 # Unlike the predictor benchmark, OMP_NUM_THREADS is deliberately NOT pinned:
 # as of v0.1.5 the Cython kernels no longer link OpenMP, and leaving it unset is

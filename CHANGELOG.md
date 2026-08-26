@@ -118,7 +118,7 @@ parallelising a loop far too short to benefit from it.
 ### Measured (iffSLURM `viti`/`iffcluster0806`, Xeon E5-2680 v2, 20 cores)
 
 - [x] 2,744,000 centers: 355 s serial → 32 s at `num_proc=16` (11.20×, 70% efficiency); 1.92× / 3.60× / 6.39× at 2 / 4 / 8. Batching alone (`num_proc=1`) costs 0.03%, i.e. nothing.
-- [x] Break-even is ~18,500 centers per `create()` call — below it the parallel path is slower. The `create_data.py` pipelines evaluate 13,720 centers per frame and therefore sit *below* it (measured 0.67×); they should parallelise over frames instead. Left to the owners of those example scripts. Full write-up in `reports/fingerprints-parallel/` (untracked, per the `reports/` gitignore convention).
+- [x] Break-even is ~18,500 centers per `create()` call — below it the parallel path is slower. The `create_data.py` pipelines evaluate 13,720 centers per frame and therefore sit *below* it (measured 0.67×); they should parallelise over frames instead. Left to the owners of those example scripts. Full write-up in the [v0.1.5 release notes](https://github.com/StefanoSanvitoGroup/MLdensity/releases/tag/v0.1.5) and PR #5.
 
 ## [0.1.4] - 2026-07-11 — branch `fixes/post-review-hygiene`
 
