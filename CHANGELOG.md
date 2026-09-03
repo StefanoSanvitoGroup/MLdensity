@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.1.9] - 2026-09-03 — branch `fix-2b-upper-packing`
+
+Fixes an index-packing defect in the 2B (two-body) contraction kernel that left part of every
+same-species descriptor block permanently at zero and silently discarded an equal number of
+radial pairs. Present since the initial import of the fingerprint code and byte-identical on
+`stable`, so every result published from this repository was computed with a narrower basis
+than the one its feature count advertises.
+
+Numbered 0.1.9, the next unused patch version above the 0.1.8 claimed by PR #7, which this
+branch is based on so as not to drop the alpha/beta fix. Under the merge-order rule from
+issue #8 — *the PR merging first takes the next unused patch version* — both numbers move if
+an unrelated PR merges ahead of them.
+
+Reported by a downstream user of the library (the KKR-JLCDM potential-prediction project),
+which observed the zero columns in a rank analysis of its own design matrix.
+
+### Bug fixes
+
+- [x] `calculate_3b_upper` (`jlcontraction.pyx`) paired a loop guard selecting the *lower* radial index triangle, `if (i1 >= i2)`, with a packing formula, `i1*nmax - i1*(i1-1)/2 + (i2-i1)`, that is a bijection only over the *upper* triangle `i2 >= i1`. Fed the lower triangle, the term `(i2-i1)` is non-positive and walks the write pointer backwards into the block of a smaller `i1`. The result is neither a permutation nor a deduplication: some slots are written twice, the later and larger-`i1` pair overwriting an earlier one that then never appears in the descriptor at all, while an equal number of slots are never written and keep their zero prefill. Diagonal pairs are among those lost — `(2,2)` at four Jacobi orders — which is what rules out any reading of the old behavior as deliberate redundancy under the block's `n1 <-> n2` symmetry. Flipping the guard to `if (i2 >= i1)` restores the convention the function's own docstring, the formula, and `get_3b_index` all already state.
+
+### Behavior notes
+
+- [x] **Descriptor values and column order both change; models trained on earlier versions are not comparable and must be regenerated.** The feature *count* is unchanged — `number_of_features()` always counted the full upper triangle — so nothing about descriptor length, published or otherwise, moves. What changes is that the columns which were dead now carry coefficients, and the pairs that were being overwritten are now packed at their own index. A stored `scikit_*.p` model from an earlier version applies its coefficients to a different basis and its predictions are meaningless; regenerate descriptors and refit.
+- [x] The heterospecies kernel `calculate_3b` is untouched and was never affected: its full `nmax x nmax` packing is already bijective. Only same-species pair blocks change, which is why the dead fraction of a whole descriptor depends on how much of it is heterospecies.
+- [x] New `tests/test_2b_packing.py` pins the bijection directly — every upper-triangle pair to its own slot at the documented angular stride, onto the full slot range with none left dead — and checks each slot's value against an independent NumPy contraction, plus an end-to-end assertion that a real structure leaves no identically-zero descriptor column. All ten cases fail against the previous kernel and pass against this one.
+
+### Measurements
+
+Structural counts verified against the compiled extension in the project container, on the
+four shipped examples at their published settings and real structures. Fitted-accuracy
+measurements from retraining are a separate workstream and are not in this entry.
+
+- [x] **The dead-column count is exactly `(lmax + 1) * n_species * floor((m - 1)**2 / 4)` per descriptor**, with `m` the number of Jacobi orders `expand_jacobi` returns (`nmax_2b - 1` under `double_shifted` or `slope_shifted`, else `nmax_2b`). Measured against the previous kernel: `aluminium` 28 of 120 columns (23.3%), `molybdenium` 300 of 812 (36.9%), `benzene` 300 of 1572 (19.1%), `2d_mos2` 440 of 2346 (18.8%). Every example's total feature count matched its published value throughout, which is why the defect never surfaced as a length mismatch.
+- [x] **The dead fraction of a same-species block grows with radial order**, from 26.7% at `aluminium`'s five Jacobi orders to 37.9% at eleven, approaching one half asymptotically. That is the practical cost: the basis degrades exactly along the axis a radial-resolution study would push.
+
 ## [0.1.8] - 2026-08-22 — branch `fix-alpha-beta-truncation`
 
 Widens `expand_jacobi`'s alpha/beta exponents from `int` to `double`, fixing a silent
