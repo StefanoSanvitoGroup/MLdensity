@@ -13,8 +13,8 @@ branch is based on so as not to drop the alpha/beta fix. Under the merge-order r
 issue #8 — *the PR merging first takes the next unused patch version* — both numbers move if
 an unrelated PR merges ahead of them.
 
-Reported by a downstream user of the library (the KKR-JLCDM potential-prediction project),
-which observed the zero columns in a rank analysis of its own design matrix.
+Reported in issue #11 by a downstream user of the library (the KKR-JLCDM potential-prediction
+project), which observed the zero columns in a rank analysis of its own design matrix.
 
 ### Bug fixes
 
