@@ -45,3 +45,16 @@ Bugs fixed on integration (in the received file):
 ## Performance: parallelize the example pipelines over frames, not centers
 
 - [ ] `*/ml_model/data_ml/create_data.py` (4 copies) call `create()` once per frame with 0.5% of the voxels — 13,720 centers for a 140³ grid. That is *below* the ~18,500-center break-even of `fast_fingerprints` (measured 0.67×, i.e. slower), because ~2 s of process spawn cannot be amortized over ~1.6 s of work. The frame loop is the right axis there: frames are independent and the fixed cost is then paid once per dataset rather than once per frame. Deliberately not done on `fast-fingerprints` — these are example pipelines owned by the Sanvito group, and the recommendation now rests on a measurement rather than an assumption. See the [v0.1.5 release notes](https://github.com/StefanoSanvitoGroup/MLdensity/releases/tag/v0.1.5).
+
+## Merge the CJL extension back into this repository
+
+- [ ] Placeholder, no design yet. The covariant Jacobi-Legendre (CJL) extension exists only as
+  the Zenodo record accompanying Focassio et al., *Phys. Rev. B* **110**, 184106 (2024)
+  ([doi 10.5281/zenodo.13772980](https://doi.org/10.5281/zenodo.13772980)) — a fork of this
+  package rather than a branch of it, so it has no living home here.
+
+  **What must not be lost in the merge-back:** the CJL fork predates both open fixes and carries
+  neither. The `alpha`/`beta` integer-truncation defect (issue #6, PR #7) is present in its
+  `polynomials.pyx`, and the 2B upper-triangle packing defect (issue #11, PR #12) is present
+  *twice* in its `jlcontraction.pyx` — in `calculate_3b_upper` and in `calculate_3b_upper_l0`.
+  Whoever does the merge must apply both, or consciously decide not to.
