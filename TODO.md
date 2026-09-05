@@ -45,3 +45,22 @@ Bugs fixed on integration (in the received file):
 ## Performance: parallelize the example pipelines over frames, not centers
 
 - [ ] `*/ml_model/data_ml/create_data.py` (4 copies) call `create()` once per frame with 0.5% of the voxels — 13,720 centers for a 140³ grid. That is *below* the ~18,500-center break-even of `fast_fingerprints` (measured 0.67×, i.e. slower), because ~2 s of process spawn cannot be amortized over ~1.6 s of work. The frame loop is the right axis there: frames are independent and the fixed cost is then paid once per dataset rather than once per frame. Deliberately not done on `fast-fingerprints` — these are example pipelines owned by the Sanvito group, and the recommendation now rests on a measurement rather than an assumption. See `reports/fingerprints-parallel/`.
+
+## Before reopening this branch: rebase onto the 2B packing fix
+
+- [ ] This branch does not contain the 2B upper-triangle packing fix (PR #12, issue #11,
+  released as 0.1.9 on `fix-2b-upper-packing`), nor the `alpha`/`beta` truncation fix
+  (PR #7, issue #6, 0.1.8). Rebase onto whatever `stable` carries once those land, before
+  doing any further measurement here — descriptor values change under both, so any number
+  produced on this branch beforehand is not comparable with one produced after.
+
+  Two specifics worth having written down rather than rediscovered:
+
+  - **The version number here collides.** `pyproject.toml` on this branch also claims 0.1.8,
+    which PR #7 has taken. Under the merge-order rule from issue #8 — *the PR merging first
+    takes the next unused patch version* — this branch must be renumbered at rebase time.
+  - **`tests/test_fingerprints.py:364` (`test_slope_shift_block_width`) is safe, but only
+    because of how it is written.** It asserts the *width* of the `slope_shifted` block,
+    which the packing fix does not change — `number_of_features()` is untouched. Any future
+    test here that asserts block *contents* or column *order* would be layout-dependent and
+    would need writing against the fixed packing, not the old one.
