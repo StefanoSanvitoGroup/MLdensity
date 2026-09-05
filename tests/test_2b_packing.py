@@ -16,9 +16,9 @@ import pytest
 pytest.importorskip("jlgridfingerprints.lib.jlcontraction")
 
 from ase.build import bulk  # noqa: E402
+from jlgridfingerprints.lib.jlcontraction import calculate_3b_upper  # noqa: E402
 
 from jlgridfingerprints.fingerprints import JLGridFingerprints  # noqa: E402
-from jlgridfingerprints.lib.jlcontraction import calculate_3b_upper  # noqa: E402
 
 # Known-good settings from the aluminium example pipeline.
 SETTINGS = {
@@ -71,7 +71,7 @@ def test_upper_packing_is_a_bijection(nmax):
                 f"pair ({n1},{n2}) wrote {len(slots)} slots, expected {lmax}"
             )
             base = min(slots)
-            assert slots == {base + l * n_pairs for l in range(lmax)}, (
+            assert slots == {base + ell * n_pairs for ell in range(lmax)}, (
                 f"pair ({n1},{n2}) is not packed at stride {n_pairs}: {sorted(slots)}"
             )
 
@@ -110,10 +110,10 @@ def test_kernel_matches_an_explicit_contraction(nmax):
     for n1 in range(nmax):
         for n2 in range(n1, nmax):
             slot = n1 * nmax - (n1 * (n1 - 1)) // 2 + (n2 - n1)
-            for l in range(lmax):
-                assert out[slot + l * n_pairs] == pytest.approx(
-                    expected[n1, n2, l]
-                ), f"slot for pair ({n1},{n2}) at l={l} holds the wrong coefficient"
+            for ell in range(lmax):
+                assert out[slot + ell * n_pairs] == pytest.approx(
+                    expected[n1, n2, ell]
+                ), f"slot for pair ({n1},{n2}) at l={ell} holds the wrong coefficient"
 
 
 def test_no_identically_zero_descriptor_columns():
