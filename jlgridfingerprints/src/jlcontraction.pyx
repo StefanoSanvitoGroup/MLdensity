@@ -159,7 +159,9 @@ def calculate_3b_upper(double [:,::1]a,double [:,::1]b,double [:,:,::1]c):
     for i3 in range(lmax):
         for i1 in range(nmax):
             for i2 in range(nmax):
-                if (i1 >= i2):
+                # The packing below is a bijection only over i2 >= i1; the
+                # opposite triangle aliases pairs onto occupied slots.
+                if (i2 >= i1):
                     i = <int>(i1*nmax - (i1*(i1-1)/2) + (i2-i1) + i3*k1)
                     s = 0
                     for i4 in range(n4):
