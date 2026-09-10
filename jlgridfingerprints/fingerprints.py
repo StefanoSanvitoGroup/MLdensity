@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -60,6 +61,7 @@ class JLGridFingerprints:
         shifted: bool = True,
         double_shifted: bool = False,
         nn_leaf_size: int = 2,
+        warn_absent_species: bool = True,
     ):
         """Configure the descriptor and precompute the feature layout.
 
@@ -77,7 +79,10 @@ class JLGridFingerprints:
             parallel to ``nmax`` (one or two entries); ``alpha`` and ``beta``
             must have matching length.
         species : list of str
-            Chemical symbols of the species to include.
+            Chemical symbols of the species to include. Fixes the descriptor
+            column order. A species absent from a given structure is allowed:
+            its blocks come out identically zero, with a ``UserWarning``
+            unless ``warn_absent_species`` is ``False``.
         body : str
             ``"+"``-joined tokens selecting which terms to compute: ``"1"`` for
             the 1B (radial) term and ``"2"`` for the 2B (radial-angular) term.
@@ -109,6 +114,14 @@ class JLGridFingerprints:
         nn_leaf_size : int
             Leaf size of the KD-tree used for the neighbour search. Default
             ``2``.
+        warn_absent_species : bool
+            Whether to emit a ``UserWarning`` naming any configured species
+            with no atom in the structure being featurized. Default ``True``.
+            Set ``False`` for data where absence is the expected condition,
+            such as impurity embeddings. A ``warnings`` filter is not an
+            equivalent: :mod:`jlgridfingerprints.fast_fingerprints` runs
+            ``create`` in spawned worker processes, which do not inherit the
+            parent's filter state.
         """
 
         self._vector = vector
@@ -214,6 +227,7 @@ class JLGridFingerprints:
         self._double_shifted = double_shifted
 
         self._nn_leaf_size = nn_leaf_size
+        self._warn_absent_species = warn_absent_species
 
         pair_index = np.unique(
             np.sort(
@@ -358,10 +372,23 @@ class JLGridFingerprints:
         Populates the ``nn_elem_*`` attributes consumed by the per-term
         builders.
 
+        A configured species with no atom in ``system`` yields an empty
+        neighbour set at every center rather than an error, so every block
+        involving it comes out identically zero. Unless
+        ``warn_absent_species`` was disabled, a ``UserWarning`` names the
+        absent species, since the same situation arises from a mistyped
+        chemical symbol.
+
         Parameters
         ----------
         system : ase.Atoms
             Structure to search for neighbours of each center.
+
+        Warns
+        -----
+        UserWarning
+            If any configured species has no atom in ``system``, unless
+            ``warn_absent_species`` is ``False``.
         """
 
         nn_elem_list = []
@@ -372,8 +399,23 @@ class JLGridFingerprints:
         nn_elem_num = []
 
         chem_symbols = np.asarray(system.get_chemical_symbols())
+        absent = []
 
         for elem in self.species:
+            if not (chem_symbols == elem).any():
+                # No atom of this species: the empty neighbour set every center
+                # already knows how to handle, in the shapes and dtypes
+                # get_nn_in_sphere returns. Building it here rather than calling
+                # get_nn_in_sphere, whose KDTree rejects a (0, 3) position array.
+                absent.append(elem)
+                nn_elem_list.append(np.empty(0, dtype=np.int32))
+                nn_elem_dist.append(np.empty(0, dtype=np.float64))
+                nn_elem_vec.append(np.empty((0, 3), dtype=np.float64))
+                nn_elem_start.append(np.zeros(self._n_centers, dtype=np.int32))
+                nn_elem_end.append(np.zeros(self._n_centers, dtype=np.int32))
+                nn_elem_num.append(np.zeros(self._n_centers, dtype=np.int32))
+                continue
+
             elem_system = system.copy()
             del elem_system[(chem_symbols != elem).nonzero()[0]]
 
@@ -392,6 +434,15 @@ class JLGridFingerprints:
             nn_elem_start.append(nn_start.copy())
             nn_elem_end.append(nn_end.copy())
             nn_elem_num.append(nn_num.copy())
+
+        if absent and self._warn_absent_species:
+            warnings.warn(
+                f"configured species {absent} have no atom in this structure; "
+                "every descriptor block involving them is identically zero. "
+                "Check for a mistyped chemical symbol if this is unexpected.",
+                UserWarning,
+                stacklevel=3,
+            )
 
         self.nn_elem_list = nn_elem_list
         self.nn_elem_dist = nn_elem_dist
