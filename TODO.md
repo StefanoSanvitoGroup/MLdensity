@@ -5,10 +5,9 @@ Open items only. Completed work is recorded in [CHANGELOG.md](CHANGELOG.md) and 
 
 ## Open pull requests — awaiting the Sanvito group's decision
 
-All three change behaviour, so none merges without review. The measured evidence lives in
-the issue and the pull request; the patch version each takes is decided by merge order, per
-the rule in issue #8. They are stacked in the order listed, each branch based on the one
-above it, so a checkout of the last carries all three.
+Both change numerical behaviour, so neither merges without review. The measured evidence
+lives in the issue and the pull request; the patch version each takes is decided by merge
+order, per the rule in issue #8.
 
 - [ ] **Jacobi exponent truncation.** `expand_jacobi` (`polynomials.pyx`) declared its
   exponents $\alpha, \beta$ as `int` while the example pipelines pass floats (e.g. `7.875`),
@@ -16,13 +15,6 @@ above it, so a checkout of the last carries all three.
   branch `fix-alpha-beta-truncation`.
 - [ ] **2B upper-triangle packing.** `calculate_3b_upper` packs an index triangle its
   flattening formula is not a bijection on. Issue #11, PR #12, branch `fix-2b-upper-packing`.
-- [ ] **Absent configured species.** `_initialize_distances` (`fingerprints.py`) crashes in
-  the neighbour search when a configured species has no atom in the structure being
-  featurized — which is every structure of a multi-species impurity dataset. The species now
-  yields zero blocks, the physically correct answer for a pair of elements that never
-  co-occur. Alone among the three it changes no value a working input produces, only inputs
-  that previously raised, so nothing needs regenerating. Issue #13, PR #14, branch
-  `2026-09-10-absent-species`.
 
 ## Package standards — remaining
 
