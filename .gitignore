@@ -207,3 +207,4 @@ cython_debug/
 
 # Claude Code local settings (per-machine, not project config)
 .claude/
+scratch/
