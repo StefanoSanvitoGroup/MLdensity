@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.1.10] - 2026-09-10 — branch `2026-09-10-absent-species`
+
+Lets a configured chemical species that is absent from a given structure produce
+identically-zero descriptor blocks instead of raising. Previously any such structure crashed
+in the neighbour search, which made multi-species impurity data — where each structure holds
+only a subset of the configured species — impossible to featurize at all.
+
+Numbered 0.1.10, the next unused patch version above the 0.1.9 claimed by PR #12, which this
+branch is based on so as not to drop the 2B packing fix, which in turn is based on PR #7 for
+the alpha/beta fix. Under the merge-order rule from issue #8 — *the PR merging first takes
+the next unused patch version* — all three numbers move if an unrelated PR merges ahead of
+them. Downstream users who pin and stamp the descriptor version should treat 0.1.10 as
+provisional until this merges.
+
+Reported by a downstream user of the library (the KKR-JLCDM impurity campaign), whose ladder
+over one to five impurity species died identically at the first structure of every rung with
+two or more species.
+
+### Bug fixes
+
+- [x] `JLGridFingerprints._initialize_distances` (`fingerprints.py`) built one neighbour list per configured species by copying the `Atoms` object and deleting every atom that is not that element. For a species with no atom in the structure the copy is empty, its `get_positions()` is a `(0, 3)` array, and the `KDTree` inside `get_nn_in_sphere` (`geometry.pyx`) rejects it with `ValueError: Found array with 0 sample(s) (shape=(0, 3)) while a minimum of 1 is required`. The species now yields the empty neighbour set directly — flat index, distance and vector arrays of length zero, and all-zero per-center start, end and count strides — in the shapes and dtypes `get_nn_in_sphere` returns, so the KDTree is never constructed. Zero is the physically correct answer: a block for a pair of elements that never co-occur in the structure has no contributions.
+
+### Behavior notes
+
+- [x] **No number the library produces today changes.** The contraction path already handled zero neighbours: `create_2b_jl` and `create_3b_jl` emit correctly-sized zero blocks whenever a species has none at a given center, and "absent from the structure" is that at every center. Every compiled kernel below them is likewise safe at zero neighbours — `expand_jacobi`, `get_versors` and `expand_legendre` return correctly-shaped empty arrays whose fill loops do not execute, and `calculate_2b`, `calculate_3b` and `calculate_3b_upper` pre-zero their output before accumulating. The change is therefore confined to the Python layer and **needs no Cython rebuild**. Only inputs that previously raised behave differently; every input that returned a descriptor returns a bitwise-identical one.
+- [x] An absent species now raises a `UserWarning` naming it, once per `create()` call. Nothing validates that `species` entries are real chemical symbols, so without the warning a mistyped one — `"AL"` for `"Al"` — would turn from a loud failure at the first `create()` into a silently all-zero block that survives into a fit, where it reads as a species with no signal. New constructor argument `warn_absent_species` (default `True`) turns it off for data where absence is the expected condition. It exists rather than deferring to a `warnings` filter because a filter set in the caller does not reach `fast_fingerprints`, whose pool spawns rather than forks: measured, a parent-process `filterwarnings("ignore", ...)` left all four worker warnings in place, while `warn_absent_species=False` silences them, since the setting travels to the workers with the settings dict. `PYTHONWARNINGS` also works, but only as an environment variable, which the run configuration cannot record.
+- [x] `fast_fingerprints.JLGridFingerprints` inherits `_initialize_distances` from the serial class, so the parallel path is fixed by the same change and needs none of its own.
+
+### Tests
+
+- [x] `tests/test_fingerprints.py` gains two cases, the repository's first multi-species coverage of any kind. `test_absent_species_gives_zero_blocks` featurizes an AlCu cell under a wide `['Al', 'Cu', 'Ni']` configuration and asserts that every Ni block is exactly zero while every other block is bitwise equal to the same block of a narrow `['Al', 'Cu']` run. `test_all_but_one_species_absent` runs the same wide configuration on pure Al, covering two of three configured species absent — the ordinary single-impurity case under a wide configuration. Both index the descriptor through a `_block_slices` helper that rebuilds the column layout from the same rules `create_2b_jl` and `create_3b_jl` concatenate by, since that layout is what is under test; shifting it by one column makes the tests fail, checked. A third case asserts that `warn_absent_species=False` silences the warning and returns a bitwise-identical descriptor.
+
+### Measurements
+
+Verified in the project container against the compiled extensions.
+
+- [x] **Bitwise identity where no species is absent.** A MoS$_2$ cell featurized at the `2d_mos2` published settings under its matched `['Mo', 'S']` configuration gives the same `(64, 409)` design matrix before and after the fix, maximum absolute difference `0.0`. This is the direct evidence for the behaviour note above.
+- [x] **The parallel path agrees exactly.** Under a wide `['Mo', 'S', 'Ni']` configuration on the same cell, `fast_fingerprints` at two processes reproduces the serial result bitwise.
+
 ## [0.1.9] - 2026-09-03 — branch `fix-2b-upper-packing`
 
 Fixes an index-packing defect in the 2B (two-body) contraction kernel that left part of every
