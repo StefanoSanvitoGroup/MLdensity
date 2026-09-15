@@ -7,6 +7,9 @@ CHGCAR
 *.h5
 # Local AI coding-session transcripts (specstory) and scratch scripts
 .specstory/
+# Personal tooling: renders a session transcript into .specstory/ when SpecStory
+# did not record it. Of no use to this project's other contributors.
+scripts/specstory-recovery/
 # Obsidian
 .obsidian/
 # local development files
