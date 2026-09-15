@@ -3,12 +3,14 @@
 Open items only. Completed work is recorded in [CHANGELOG.md](CHANGELOG.md) and in the
 [GitHub releases](https://github.com/StefanoSanvitoGroup/MLdensity/releases), by version.
 
-## Open pull requests — awaiting the Sanvito group's decision
+## Open pull requests — under review by the Sanvito group
 
-All three change behaviour, so none merges without review. The measured evidence lives in
-the issue and the pull request; the patch version each takes is decided by merge order, per
-the rule in issue #8. They are stacked in the order listed, each branch based on the one
-above it, so a checkout of the last carries all three.
+All three change behaviour. Reviewed by Luke, to be merged if the group's own testing agrees
+and the PI signs off, as agreed at the code review meeting of 2026-09-15. The measured
+evidence lives in the issue and the pull request; the patch version each takes is decided by
+merge order, per the rule in issue #8. They are stacked in the order listed, each branch based
+on the one above it, so a checkout of the last carries all three, and merging them in that
+order keeps the versions as written. Each branch carries this roadmap as of 2026-09-15.
 
 - [ ] **Jacobi exponent truncation.** `expand_jacobi` (`polynomials.pyx`) declared its
   exponents $\alpha, \beta$ as `int` while the example pipelines pass floats (e.g. `7.875`),
@@ -31,9 +33,33 @@ above it, so a checkout of the last carries all three.
 - [ ] Zenodo release→DOI: enable the GitHub–Zenodo integration, then cut a release.
 - [ ] `sample_charge` (`tools.py`) normalises with `prob_chg /= sum(prob_chg)`. If every
   Gaussian weight underflows to zero — many near-zero `chg` voxels — this divides by zero,
-  giving NaN probabilities and a failing `rng.choice(p=...)`. Falling back to uniform
-  probabilities would fix it but changes sampling behaviour, so it needs the Sanvito group's
-  sign-off. (Found in the Copilot review of PR #2.)
+  giving NaN probabilities and a failing `rng.choice(p=...)`. (Found in the Copilot review of
+  PR #2.) `develop` already answers this in commit `54b1f2f`, masking voxels below `1e-10` to
+  zero probability, which is the weight's own limit there and a better fix than the uniform
+  fallback first proposed; it still leaves the all-underflow case open. Changes sampling
+  behaviour, so it needs the Sanvito group's sign-off.
+
+## Branches inherited from the original authors
+
+`develop` forked from `stable` in February 2023 and holds three content commits by Urvesh,
+none of which ever reached `stable`. Raised with the group at the 2026-09-15 code review
+meeting; reviewed here so the question is not reopened.
+
+- [x] **Multispecies guard — superseded, nothing to carry over.** Commit `408388f` ("fix
+  multispecies") guards the same call site as PR #14 with the same idea, skipping the
+  neighbour-tree build for an absent species. Its diff is large only because the file was
+  reformatted in the same commit. Four of its six placeholder arrays have the wrong length,
+  dtype and dimensionality, harmless only because every consumer tests the neighbour count
+  first; it has no warning and no tests. PR #14 is a superset.
+- [ ] **One-body double-vanishing basis — not on `stable`, possibly wanted.** Commit
+  `fc4f47f` adds a `double_shifted_1b` switch letting the 1B radial basis vanish at both ends
+  of its mapped interval rather than at the cutoff alone, costing one radial order per
+  species. It looks complete and self-consistent. Taken from `develop` as is it would inherit
+  the boundary bug fixed in 0.1.6, so it needs re-applying on top of `stable`. Ask the group
+  whether it was used for anything published.
+- [ ] **Retire `develop` and `parallel_predict`?** `parallel_predict` (2024, "untested code
+  for prediction in parallel") is superseded by the `fast_predictor` merged in 0.1.3.
+  `develop` has nothing left once the one-body item above is settled. The group's call.
 
 ## Performance: parallelize `create()` over centers, in-process
 
