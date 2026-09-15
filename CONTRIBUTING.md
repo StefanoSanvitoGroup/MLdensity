@@ -22,6 +22,26 @@ pip install -e ".[test]"
   for both `.py` and `.pyx` files. Every parameter in a signature must have a
   docstring entry, with the default behaviour noted for optional parameters.
 
+## Citing measurements
+
+`reports/` is gitignored: it holds local development write-ups that exist on one
+machine and are not part of the repository. **Tracked files must therefore not cite a
+`reports/` path** — for anyone else, and for any future checkout, such a pointer
+resolves to nothing.
+
+Cite the most durable thing that actually contains the measurement, in this order:
+
+1. a **release tag** for work that has shipped (`v0.1.5`) — immutable and aligned with
+   the version a CHANGELOG section already names;
+2. a **pull request or issue** for work still in review (`PR #7`) — the write-up lives
+   in its description;
+3. a **commit hash** when neither exists.
+
+If nothing public holds it, say so in those words rather than linking a local path, and
+inline the one number the reader needs. Before citing, check the target genuinely
+contains the content — a pointer to a release whose notes omit the measurement is the
+same dead end in a nicer costume.
+
 ## Tests
 
 `pytest`. The `tools` tests run anywhere; the fingerprint/predictor tests need
