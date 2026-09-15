@@ -40,6 +40,18 @@ def atoms():
     return bulk("Al", "fcc", a=4.05)
 
 
+def test_alpha_beta_at_domain_boundary_raises():
+    settings = dict(SETTINGS, alpha=[7.875386069413652, -1.0])
+    with pytest.raises(ValueError, match="alpha and beta must be > -1"):
+        JLGridFingerprints(**settings)
+
+
+def test_alpha_beta_below_domain_boundary_raises():
+    settings = dict(SETTINGS, beta=[3.6238075908648106, -2.5])
+    with pytest.raises(ValueError, match="alpha and beta must be > -1"):
+        JLGridFingerprints(**settings)
+
+
 def test_fingerprint_shape(atoms):
     jl = JLGridFingerprints(**SETTINGS)
     centers = create_grid_coords(

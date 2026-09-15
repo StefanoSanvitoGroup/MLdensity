@@ -199,6 +199,14 @@ class JLGridFingerprints:
                     "size of alpha and beta should correspond to the number of bodys for expansion"
                 )
 
+        for value in (self._alpha_1b, self._beta_1b) + (
+            (self._alpha_2b, self._beta_2b) if self._do_3b_jl else ()
+        ):
+            if value <= -1:
+                raise ValueError(
+                    f"alpha and beta must be > -1 (Jacobi weight domain); got {value}"
+                )
+
         self._lmax = lmax
         self._gamma = gamma
         self._rmin = rmin
