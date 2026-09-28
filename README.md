@@ -55,8 +55,8 @@ settings = {
     "rcut": 4.08,
     "nmax": [15, 6],  # radial orders for the 1B and 2B terms
     "lmax": 6,  # angular order for the 2B term
-    "alpha": [7.875, 5.875],
-    "beta": [3.624, 1.751],
+    "alpha": [7, 5],
+    "beta": [3, 1],
     "rmin": -0.74,
     "species": ["Al"],
     "body": "1+2",

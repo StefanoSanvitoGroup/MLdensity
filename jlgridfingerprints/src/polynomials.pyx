@@ -10,7 +10,7 @@ cimport cython
 from jlgridfingerprints.lib.utils import vector_dot
 from libc.math cimport pi,cos
 
-def expand_jacobi(double[::1] rgi, int nmax, int alpha, int beta, double rcut, double rmin=0, double gamma=1, bint shifted=1, bint double_shifted=0):
+def expand_jacobi(double[::1] rgi, int nmax, double alpha, double beta, double rcut, double rmin=0, double gamma=1, bint shifted=1, bint double_shifted=0):
     """Vanishing-Jacobi radial expansion of neighbour distances.
 
     See the JLCDM paper (DOI:10.1038/s41524-023-01053-0) for the definitions.
@@ -21,10 +21,10 @@ def expand_jacobi(double[::1] rgi, int nmax, int alpha, int beta, double rcut, d
         Neighbour distances (1-D, length n_neighbours).
     nmax : int
         Maximum Jacobi order.
-    alpha, beta : int
-        Jacobi weighting-function parameters (intended as real values > -1; the
-        public signature currently declares them ``int`` while the internal
-        worker uses ``double``).
+    alpha, beta : float
+        Jacobi weighting-function parameters, real-valued with domain
+        ``alpha > -1`` and ``beta > -1``. Not validated here: this function
+        runs once per grid center, so the domain check belongs to the caller.
     rcut : float
         Cutoff radius used in the cosine map.
     rmin : float, optional
