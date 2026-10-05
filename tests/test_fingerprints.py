@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023-2026 Trinity College Dublin and the jlgridfingerprints contributors
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 """Smoke tests for the fingerprint + predictor pipeline.
 
 These require the compiled Cython extensions; if they are not built (e.g. on a

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023-2026 Trinity College Dublin and the jlgridfingerprints contributors
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 """Equivalence tests for the parallel ``fast_predictor.JLPredictor``.
 
 These assert the fast predictor produces the *same* density as the serial

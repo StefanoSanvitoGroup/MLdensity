@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023-2026 Trinity College Dublin and the jlgridfingerprints contributors
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 """The ``double_shifted`` basis must vanish at both ends of its own interval.
 
 ``double_shifted`` removes a multiple of the linear order so that the radial basis

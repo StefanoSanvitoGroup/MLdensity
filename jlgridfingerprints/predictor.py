@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023-2026 Trinity College Dublin and the jlgridfingerprints contributors
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 """Predict charge densities on an FFT grid from JL fingerprints and a model."""
 
 from __future__ import annotations

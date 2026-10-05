@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: 2023-2026 Trinity College Dublin and the jlgridfingerprints contributors
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Benchmark the serial vs parallel JLPredictor on a real aluminium frame.
 
 Times :class:`jlgridfingerprints.predictor.JLPredictor` (serial) against

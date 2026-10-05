@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023-2026 Trinity College Dublin and the jlgridfingerprints contributors
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 """Equivalence tests for the parallel ``fast_fingerprints.JLGridFingerprints``.
 
 These assert the fast descriptor produces the *same* array as the serial

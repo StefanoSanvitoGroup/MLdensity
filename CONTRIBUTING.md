@@ -3,6 +3,12 @@
 Thanks for your interest in improving `jlgridfingerprints`. This is a small 
 scientific research software package; the notes below keep it consistent.
 
+## License of contributions
+
+The package is licensed under LGPL-3.0-or-later (see [README](README.md#license)). By
+submitting a contribution you license it under the same terms, and you keep the copyright
+in it. New source files start with the two-line SPDX header the existing ones carry.
+
 ## Development setup
 
 The Cython extensions need a Linux build toolchain. On macOS build and run

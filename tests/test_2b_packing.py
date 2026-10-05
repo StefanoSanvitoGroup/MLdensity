@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023-2026 Trinity College Dublin and the jlgridfingerprints contributors
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 """Regression tests for the 2B (two-body) upper-triangle packing.
 
 ``calculate_3b_upper`` packs the symmetric ``nmax x nmax`` radial index pair

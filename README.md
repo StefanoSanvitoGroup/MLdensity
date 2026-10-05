@@ -256,5 +256,7 @@ In short: you may use the package from any code, open or closed, and redistribut
 Modified versions of `jlgridfingerprints` itself that you distribute must stay under the
 LGPL, with their source available.
 
-The copyright holders are the authors listed in [CITATION.cff](CITATION.cff). They also
-license all earlier versions of this repository, from its first commit, under the same terms.
+Copyright © 2023–2026 Trinity College Dublin and the jlgridfingerprints contributors (the
+authors are listed in [CITATION.cff](CITATION.cff)). Contributors keep the copyright in their
+contributions. The copyright holders also license all earlier versions of this repository,
+from its first commit, under the same terms.

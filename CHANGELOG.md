@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Packaging
+
+- [x] Every tracked `.py`/`.pyx` file starts with a two-line SPDX header naming the copyright
+  holders (Trinity College Dublin and the jlgridfingerprints contributors) and the license
+  (`LGPL-3.0-or-later`). Comments only; the Cython directive comments still follow, which
+  Cython accepts after other comments.
+- [x] `README.md` License section names the same copyright holders, as Trinity College
+  Dublin's IP policy (2022, §2.2) asks for on its open-source releases; `CONTRIBUTING.md`
+  states that contributions come in under the same license and stay their author's copyright.
+
 ## [0.1.11] - 2026-10-05 — license
 
 First licensed release. Until now the repository carried no license, which by default leaves

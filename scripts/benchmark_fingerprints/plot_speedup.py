@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: 2023-2026 Trinity College Dublin and the jlgridfingerprints contributors
+# SPDX-License-Identifier: LGPL-3.0-or-later
 """Plot a JLGridFingerprints sweep from a benchmark_fingerprints.py JSON file.
 
 Left panel: speedup vs ``num_proc`` against the ideal linear line.
