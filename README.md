@@ -244,3 +244,17 @@ podman rm container-name            # remove container
 podman images                       # list images
 podman rmi image-name               # remove image
 ```
+
+## License
+
+`jlgridfingerprints` is free software, licensed under the
+[GNU Lesser General Public License, version 3 or later](COPYING.LESSER)
+(SPDX `LGPL-3.0-or-later`). The LGPL is a set of additional permissions on top of the
+[GNU General Public License, version 3](COPYING), so both texts ship with the package.
+
+In short: you may use the package from any code, open or closed, and redistribute it.
+Modified versions of `jlgridfingerprints` itself that you distribute must stay under the
+LGPL, with their source available.
+
+The copyright holders are the authors listed in [CITATION.cff](CITATION.cff). They also
+license all earlier versions of this repository, from its first commit, under the same terms.

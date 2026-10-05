@@ -3,7 +3,8 @@ message: "If you use this software, please cite both the software and the paper 
 title: "jlgridfingerprints"
 abstract: "Linear Jacobi-Legendre grid fingerprints for machine learning of the electronic charge density."
 type: software
-version: 0.1.10
+version: 0.1.11
+license: LGPL-3.0-or-later
 repository-code: "https://github.com/StefanoSanvitoGroup/MLdensity"
 authors:
   - given-names: Bruno

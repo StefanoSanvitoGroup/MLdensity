@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.11] - 2026-10-05 — license
+
+First licensed release. Until now the repository carried no license, which by default leaves
+all rights with the authors and gives nobody else permission to use, copy or redistribute the
+code. The Sanvito group chose the GNU LGPL, version 3 or later.
+
+### Packaging
+
+- [x] `COPYING` (GPLv3) and `COPYING.LESSER` (LGPLv3), verbatim from gnu.org. Both are
+  needed: the LGPLv3 is written as a set of additional permissions on the GPLv3.
+- [x] `pyproject.toml`: `license = "LGPL-3.0-or-later"` and `license-files` (PEP 639), so the
+  wheel and sdist metadata carry `License-Expression` and both texts. The build now requires
+  `setuptools>=77`, the first version that accepts an SPDX license expression.
+- [x] `CITATION.cff`: `license: LGPL-3.0-or-later`.
+- [x] `README.md`: a License section, which also states that the copyright holders license
+  all earlier versions of the repository under the same terms. Without that sentence the
+  license would cover only this release and its successors, and every earlier commit and
+  release would stay unlicensed.
+
+No code or numerical behaviour changes.
+
 ## [0.1.10] - 2026-09-10 — branch `2026-09-10-absent-species`
 
 Lets a configured chemical species that is absent from a given structure produce

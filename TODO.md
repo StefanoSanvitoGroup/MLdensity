@@ -5,8 +5,6 @@ Open items only. Completed work is recorded in [CHANGELOG.md](CHANGELOG.md) and 
 
 ## Package standards — remaining
 
-- [ ] LICENSE file + `license` field in `pyproject.toml` (pending the Sanvito group's choice —
-  can land last).
 - [ ] Zenodo release→DOI: enable the GitHub–Zenodo integration, then cut a release.
 - [ ] `sample_charge` (`tools.py`) normalises with `prob_chg /= sum(prob_chg)`. If every
   Gaussian weight underflows to zero — many near-zero `chg` voxels — this divides by zero,
