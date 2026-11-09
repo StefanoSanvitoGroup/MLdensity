@@ -62,3 +62,15 @@ welcome. **Changes that alter numerical behaviour** (the fingerprint math,
 contraction kernels, Jacobi/Legendre evaluation, or predictions) should be
 discussed with the maintainers first — please open an issue describing the
 change rather than altering published results silently.
+
+## Releasing
+
+1. Bump the version in `pyproject.toml` and `CITATION.cff`, and turn `[Unreleased]` in
+   `CHANGELOG.md` into the new version's section. Merge that to `stable`.
+2. Create a GitHub release with tag `vX.Y.Z` on `stable`. Publishing the release runs
+   `.github/workflows/publish.yml`, which builds the source distribution and uploads it to
+   [PyPI](https://pypi.org/project/jlgridfingerprints/). PyPI rejects a version it already
+   has, so a mistake is fixed by the next version, never by re-uploading.
+
+The upload authenticates through PyPI Trusted Publishing: the PyPI project trusts this
+repository's `publish.yml`, so no API token is stored in the repository or its secrets.

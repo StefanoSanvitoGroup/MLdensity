@@ -2,8 +2,26 @@
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-11-09 — PyPI
+
+First release published on PyPI: `pip install jlgridfingerprints`.
+
 ### Packaging
 
+- [x] `.github/workflows/publish.yml`: publishing a GitHub release builds the source
+  distribution, checks it with `twine check --strict`, and uploads it to PyPI through
+  Trusted Publishing, so no API token exists to leak or expire.
+- [x] Source distribution only, no binary wheels. `setup.py` compiles with `-march=native`,
+  which tunes the extensions to the build machine's CPU; a wheel built that way on a CI
+  runner can crash with an illegal-instruction error on an older CPU. Compiling on install
+  keeps the build flags, and with them the numerics, exactly as they were. Wheels need that
+  flag changed first, which is the group's decision.
+- [x] `MANIFEST.in` ships the `.pyx` sources in the sdist. Without it the sdist carried only
+  the generated `.c` files, while `setup.py` cythonizes the `.pyx` files, so installing from
+  the sdist failed. Checked by installing the sdist into a clean environment and running the
+  test suite against the installed copy.
+- [x] `README.md`: install from PyPI, and absolute links to the license and citation files
+  so they also resolve on the PyPI project page. `CONTRIBUTING.md`: a Releasing section.
 - [x] Every tracked `.py`/`.pyx` file starts with a two-line SPDX header naming the copyright
   holders (Trinity College Dublin and the jlgridfingerprints contributors) and the license
   (`LGPL-3.0-or-later`). Comments only; the Cython directive comments still follow, which

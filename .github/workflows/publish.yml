@@ -1,0 +1,25 @@
+name: Publish to PyPI
+
+# Publishing a GitHub release uploads that version's sdist to PyPI.
+# Authentication is PyPI Trusted Publishing (OIDC): no API token is stored anywhere.
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write # required for Trusted Publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # ponytail: sdist only, compiled on install. Binary wheels (cibuildwheel) would
+      # need -march=native dropped from setup.py first, which is the group's call.
+      - run: pip install build twine
+      - run: python -m build --sdist
+      - run: twine check --strict dist/*
+      - uses: pypa/gh-action-pypi-publish@release/v1
