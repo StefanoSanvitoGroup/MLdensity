@@ -5,7 +5,17 @@ Full dataset available (CHGCAR and POSCAR): https://doi.org/10.5281/zenodo.79220
 
 ## Installation
 
-The recommended environment manager is [uv](https://docs.astral.sh/uv/).
+The package is on [PyPI](https://pypi.org/project/jlgridfingerprints/):
+
+```bash
+pip install jlgridfingerprints        # or: uv pip install jlgridfingerprints
+```
+
+PyPI carries the source distribution only, so the install compiles the Cython extensions
+on your machine and needs a C compiler (on Linux, `gcc` and the Python headers). The
+extensions are built with `-march=native`, tuned to the CPU they are compiled on.
+
+From a clone of this repository, the recommended environment manager is [uv](https://docs.astral.sh/uv/).
 
 ```bash
 # one-time install
@@ -248,15 +258,15 @@ podman rmi image-name               # remove image
 ## License
 
 `jlgridfingerprints` is free software, licensed under the
-[GNU Lesser General Public License, version 3 or later](COPYING.LESSER)
+[GNU Lesser General Public License, version 3 or later](https://github.com/StefanoSanvitoGroup/MLdensity/blob/stable/COPYING.LESSER)
 (SPDX `LGPL-3.0-or-later`). The LGPL is a set of additional permissions on top of the
-[GNU General Public License, version 3](COPYING), so both texts ship with the package.
+[GNU General Public License, version 3](https://github.com/StefanoSanvitoGroup/MLdensity/blob/stable/COPYING), so both texts ship with the package.
 
 In short: you may use the package from any code, open or closed, and redistribute it.
 Modified versions of `jlgridfingerprints` itself that you distribute must stay under the
 LGPL, with their source available.
 
 Copyright © 2023–2026 Trinity College Dublin and the jlgridfingerprints contributors (the
-authors are listed in [CITATION.cff](CITATION.cff)). Contributors keep the copyright in their
+authors are listed in [CITATION.cff](https://github.com/StefanoSanvitoGroup/MLdensity/blob/stable/CITATION.cff)). Contributors keep the copyright in their
 contributions. The copyright holders also license all earlier versions of this repository,
 from its first commit, under the same terms.

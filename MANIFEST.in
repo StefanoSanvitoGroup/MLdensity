@@ -1,0 +1,4 @@
+# setup.py cythonizes the .pyx sources at build time, so the sdist must ship them.
+# The generated .c files are left out so every build uses the declared Cython.
+include jlgridfingerprints/src/*.pyx
+exclude jlgridfingerprints/src/*.c
